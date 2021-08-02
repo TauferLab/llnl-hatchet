@@ -1,0 +1,44 @@
+name: Hatchet Roundtrip Webpack Build
+
+on:
+  # push:
+  #   branches: [ develop ]
+  pull_request:
+    branches: [ develop, releases/** ]
+
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node-version: [16]
+    env: # TODO Replace with correct names
+      BUNDLE_TARGET_DIR: bundle-out
+      BUNDLE_FILES: cct.min.js boxplot.min.js
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.head_ref }}
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: Build Roundtrip Bundles
+      run: |
+        # TODO Replace with actual build commands
+        npm --help
+    - name: Move Bundles to Correct Directory
+      run: |
+        cd $BUNDLE_TARGET_DIR
+        for f in $BUNDLE_FILES; do
+            mv $f $GITHUB_WORKSPACE/hatchet/static # TODO Replace with correct destination
+        done
+        cd $GITHUB_WORKSPACE
+    - name: Commit Bundles Back into Branch
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: "Adds updated Rountrip bundles"
+        file_pattern: hatchet/static/*.min.js
