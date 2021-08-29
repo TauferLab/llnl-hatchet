@@ -10,4 +10,6 @@ PyYAML
 cython
 multiprocess
 textX
+jsonschema
+scipy
 caliper-reader
