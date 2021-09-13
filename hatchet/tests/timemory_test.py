@@ -27,6 +27,9 @@ def test_graphframe(timemory_json_data):
     wc_v = WallClock.index()  # enumeration id
     gf = GraphFrame.from_timemory(timemory_json_data, [wc_s])
 
+    # Input to from_timemory is a JSON representation of Timemory data
+    # Therefore, dataset is not set by graphframe_reader
+    assert gf.dataset is None
     assert len(gf.dataframe) == timemory.size([wc_v])[wc_v]
 
     for col in gf.dataframe.columns:
