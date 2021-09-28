@@ -27,10 +27,13 @@ def test_graphframe(timemory_json_data):
     wc_v = WallClock.index()  # enumeration id
     gf = GraphFrame.from_timemory(timemory_json_data, [wc_s])
 
+    # Input to from_timemory is a JSON representation of Timemory data
+    # Therefore, dataset is not set by graphframe_reader
+    assert gf.dataset is None
     assert len(gf.dataframe) == timemory.size([wc_v])[wc_v]
 
     for col in gf.dataframe.columns:
-        if col in ("sum.inc", "sum"):
+        if col in ("sum.wall_clock.inc", "sum.wall_clock"):
             assert gf.dataframe[col].dtype == np.float64
         elif col in ("nid", "rank"):
             assert gf.dataframe[col].dtype == np.int64
@@ -43,12 +46,12 @@ def test_tree(timemory_json_data):
     """Sanity test a GraphFrame object with known data."""
     gf = GraphFrame.from_timemory(timemory_json_data)
 
-    print(gf.tree("sum"))
+    print(gf.tree("sum.wall_clock"))
 
     output = ConsoleRenderer(unicode=True, color=False).render(
         gf.graph.roots,
         gf.dataframe,
-        metric_column="sum",
+        metric_column="sum.wall_clock",
         precision=3,
         name_column="name",
         expand_name=False,
@@ -66,7 +69,7 @@ def test_tree(timemory_json_data):
     output = ConsoleRenderer(unicode=True, color=False).render(
         gf.graph.roots,
         gf.dataframe,
-        metric_column="sum.inc",
+        metric_column="sum.wall_clock",
         precision=3,
         name_column="name",
         expand_name=False,
