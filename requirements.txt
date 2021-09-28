@@ -13,3 +13,4 @@ textX
 jsonschema
 scipy
 caliper-reader
+jsonschema
