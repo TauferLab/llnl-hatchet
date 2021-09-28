@@ -720,6 +720,8 @@ class GraphFrame:
         metric_column=None,
         precision=3,
         name_column="name",
+        rank_column="rank",
+        thread_column="thread",
         expand_name=False,
         context_column="file",
         rank=0,
@@ -754,6 +756,8 @@ class GraphFrame:
         return ConsoleRenderer(unicode=unicode, color=color).render(
             self.graph.roots,
             self.dataframe,
+            rank_key=rank_column,
+            thread_key=thread_column,
             metric_column=metric_column,
             precision=precision,
             name_column=name_column,

@@ -43,7 +43,7 @@ class ConsoleRenderer:
         self.color = color
         self.visited = []
 
-    def render(self, roots, dataframe, **kwargs):
+    def render(self, roots, dataframe, rank_key="rank", thread_key="thread", **kwargs):
         result = self.render_preamble()
 
         if roots is None:
@@ -55,7 +55,9 @@ class ConsoleRenderer:
         self.name = kwargs["name_column"]
         self.expand = kwargs["expand_name"]
         self.context = kwargs["context_column"]
+        self.rank_key = rank_key
         self.rank = kwargs["rank"]
+        self.thread_key = thread_key
         self.thread = kwargs["thread"]
         self.depth = kwargs["depth"]
         self.highlight = kwargs["highlight_name"]
@@ -108,7 +110,7 @@ class ConsoleRenderer:
         # grab the min and max value for the primary metric, ignoring inf and
         # nan values
 
-        if "rank" in dataframe.index.names:
+        if self.rank_key in dataframe.index.names:
             metric_series = (dataframe.xs(self.rank, level=1))[self.primary_metric]
         else:
             metric_series = dataframe[self.primary_metric]
@@ -198,11 +200,11 @@ class ConsoleRenderer:
         if node_depth < self.depth:
             # set dataframe index based on whether rank and thread are part of
             # the MultiIndex
-            if "rank" in dataframe.index.names and "thread" in dataframe.index.names:
+            if self.rank_key in dataframe.index.names and self.thread_key in dataframe.index.names:
                 df_index = (node, self.rank, self.thread)
-            elif "rank" in dataframe.index.names:
+            elif self.rank_key in dataframe.index.names:
                 df_index = (node, self.rank)
-            elif "thread" in dataframe.index.names:
+            elif self.thread_key in dataframe.index.names:
                 df_index = (node, self.thread)
             else:
                 df_index = node

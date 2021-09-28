@@ -33,6 +33,8 @@ class BoxPlot:
         assert isinstance(group_by, str)
         assert isinstance(metrics, list)
 
+        self.df_index = ["node"]
+
         if bkg_gf is not None:
             assert isinstance(bkg_gf, ht.GraphFrame)
 
