@@ -590,10 +590,39 @@ class GraphFrame:
         # sum over the output columns
         for node in self.graph.traverse(order="post"):
             if node.children:
-                for col in out_columns:
-                    self.dataframe.loc[node, col] = function(
-                        self.dataframe.loc[[node] + node.children, col]
+                # TODO: need a better way of aggregating inclusive metrics when
+                # TODO: there is a multi-index
+                try:
+                    is_multi_index = isinstance(
+                        self.dataframe.index, pd.core.index.MultiIndex
                     )
+                except AttributeError:
+                    is_multi_index = isinstance(self.dataframe.index, pd.MultiIndex)
+
+                if is_multi_index:
+                    for rank_thread in self.dataframe.loc[
+                        (node), out_columns
+                    ].index.unique():
+                        # rank_thread is either rank or a tuple of (rank, thread).
+                        # We check if rank_thread is a tuple and if it is, we
+                        # create a tuple of (node, rank, thread). If not, we create
+                        # a tuple of (node, rank).
+                        if isinstance(rank_thread, tuple):
+                            df_index1 = (node,) + rank_thread
+                            df_index2 = ([node] + node.children,) + rank_thread
+                        else:
+                            df_index1 = (node, rank_thread)
+                            df_index2 = ([node] + node.children, rank_thread)
+
+                        for col in out_columns:
+                            self.dataframe.loc[df_index1, col] = function(
+                                self.dataframe.loc[df_index2, col]
+                            )
+                else:
+                    for col in out_columns:
+                        self.dataframe.loc[node, col] = function(
+                            self.dataframe.loc[[node] + node.children, col]
+                        )
 
     def subgraph_sum(
         self, columns, out_columns=None, function=lambda x: x.sum(min_count=1)
@@ -657,6 +686,40 @@ class GraphFrame:
                 self.dataframe.loc[(node), out_columns] = list(
                     function(self.dataframe.loc[(subgraph_nodes), columns])
                 )
+
+    def generate_exclusive_columns(self):
+        # TODO Change how exclusive-inclusive pairs are determined when inc_metrics and exc_metrics are changed
+        generation_pairs = []
+        for inc in self.inc_metrics:
+            if not pd.api.types.is_numeric_dtype(self.dataframe[inc]):
+                continue
+            # Assume that metrics ending in "(inc)" are generated
+            if inc.endswith("(inc)"):
+                possible_exc = inc[:-len("(inc)")].strip()
+                if possible_exc not in self.exc_metrics:
+                    generation_pairs.append((possible_exc, inc))
+            else:
+                generation_pairs.append((inc + " (exc)", inc))
+        for exc, inc in generation_pairs:
+            if isinstance(self.dataframe.index, pd.MultiIndex):
+                new_data = {}
+                for node in self.graph.traverse():
+                    for non_node_idx in self.dataframe.loc[(node)].index.unique():
+                        assert isinstance(non_node_idx, tuple) or isinstance(non_node_idx, list), "MultiIndex iteration is not producing the expected type"
+                        full_idx = (node, *non_node_idx)
+                        inc_sum = 0
+                        for child in node.children:
+                            inc_sum += self.dataframe[(child, *non_node_idx), inc]
+                        new_data[full_idx] = self.dataframe[full_idx, inc] - inc_sum
+                self.dataframe[exc] = pd.Series(data=new_data)
+            else:
+                new_data = {n: -1 for n in self.dataframe.index.values}
+                for node in self.graph.traverse():
+                    inc_sum = 0
+                    for child in node.children:
+                        inc_sum += self.dataframe[child, inc]
+                    new_data[node] = self.dataframe[node, inc] - inc_sum
+                self.dataframe[exc] = pd.Series(data=new_data)
 
     def update_inclusive_columns(self):
         """Update inclusive columns (typically after operations that rewire the
