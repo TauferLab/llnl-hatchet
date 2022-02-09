@@ -711,7 +711,7 @@ PathQuery: '(' nodes=NodeExpr ')'('->' '(' nodes=NodeExpr ')')*;
 NodeExpr: ((wcard=INT | wcard=STRING) ',' name=ID) | (wcard=INT | wcard=STRING) |  name=ID;
 WhereExpr: 'WHERE' ConditionExpr;
 ConditionExpr: conditions+=CompoundCond;
-CompoundCond: UnaryCond | BinaryCond;
+CompoundCond: '(' ConditionExpr ')' | UnaryCond | BinaryCond;
 BinaryCond: AndCond | OrCond;
 AndCond: 'AND' subcond=UnaryCond;
 OrCond: 'OR' subcond=UnaryCond;
@@ -837,7 +837,9 @@ class CypherQuery(QueryMatcher):
         conditions = cond_expr.conditions
         for cond in conditions:
             converted_condition = None
-            if self._is_unary_cond(cond):
+            if self._is_condition_expr(cond):
+
+            elif self._is_unary_cond(cond):
                 converted_condition = self._parse_unary_cond(cond)
             elif self._is_binary_cond(cond):
                 converted_condition = self._parse_binary_cond(cond)
@@ -863,6 +865,11 @@ class CypherQuery(QueryMatcher):
 
     def _is_binary_cond(self, obj):
         if cname(obj) in ["AndCond", "OrCond"]:
+            return True
+        return False
+
+    def _is_condition_expr(self, obj):
+        if cname(obj) == "ConditionExpr":
             return True
         return False
 
