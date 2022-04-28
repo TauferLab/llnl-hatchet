@@ -13,3 +13,7 @@ class InvalidQueryFilter(Exception):
 
 class BadNumberNaryQueryArgs(Exception):
     """Raised when a query filter does not have a valid syntax"""
+
+
+class InvalidQueryInitializer(Exception):
+    """Raised when the data passed to the Query constructor triggers the wrong constructor"""

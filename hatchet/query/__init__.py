@@ -2,9 +2,13 @@ from .exceptions import (
     InvalidQueryPath,
     InvalidQueryFilter,
     BadNumberNaryQueryArgs,
+    InvalidQueryInitializer,
+)
+from .abstract import (
+    AbstractQuery
 )
 from .compound import (
-    AbstractQuery,
+    CompoundQueryMixin,
     NaryQuery,
     AndQuery,
     IntersectionQuery,
@@ -13,9 +17,12 @@ from .compound import (
     XorQuery,
     SymDifferenceQuery,
 )
-from .core import (
+from .query_matcher import (
     QueryMatcher
 )
 from .mid_level import (
     CypherQuery,
+)
+from .core import (
+    Query
 )

@@ -18,7 +18,7 @@ from .exceptions import (
     InvalidQueryPath,
     InvalidQueryFilter,
 )
-from .core import QueryMatcher
+from .query_matcher import QueryMatcher
 
 
 GRAMMAR = u"""

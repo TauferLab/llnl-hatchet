@@ -14,23 +14,12 @@ except ImportError:
 
 import sys
 
+from .abstract import AbstractQuery
 from .exceptions import BadNumberNaryQueryArgs
+from .query_matcher import QueryMatcher
+from .mid_level import CypherQuery
 
-
-class AbstractQuery(ABC):
-    """Abstract Base Class defining a Hatchet Query"""
-
-    @abstractmethod
-    def apply(self, gf):
-        """Apply the query to a GraphFrame.
-
-        Arguments:
-            gf (GraphFrame): the GraphFrame on which to apply the query.
-
-        Returns:
-            (list): A list representing the set of nodes from paths that match this query.
-        """
-        pass
+class CompoundQueryMixin:
 
     def __and__(self, other):
         """Create an AndQuery with this query and another.
