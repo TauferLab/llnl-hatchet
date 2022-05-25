@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .function import Query
+from .query import Query
 from .exception import (
     InvalidQueryFilter,
     InvalidQueryPath,
