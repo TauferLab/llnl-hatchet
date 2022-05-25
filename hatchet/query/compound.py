@@ -18,12 +18,15 @@ except ImportError:
     ABC = ABCMeta("ABC", (object,), {"__slots__": ()})
 
 
-class NaryQuery(ABC):
+# TODO Add aliases to AndQuery, OrQuery, etc. after old versions are removed
+
+
+class CompoundQuery(ABC):
     """Abstract Base Class defining a compound query
     that acts on and merges N separate subqueries"""
 
     def __init__(self, *args):
-        """Create a new NaryQuery object.
+        """Create a new CompoundQuery object.
 
         Arguments:
             *args (tuple): the subqueries (high-level, low-level, or compound) to be performed.
@@ -36,18 +39,18 @@ class NaryQuery(ABC):
                 self.subqueries.append(ObjectQuery(query))
             elif isinstance(query, str):
                 self.subqueries.append(StringQuery(query))
-            elif issubclass(type(query), (Query, NaryQuery)):
+            elif issubclass(type(query), (Query, CompoundQuery)):
                 self.subqueries.append(query)
             else:
                 raise TypeError(
-                    "Subqueries for NaryQuery must be either a single query \
+                    "Subqueries for CompoundQuery must be either a single query \
                     (i.e., function interface, string syntax, or object syntax) \
-                    or another NaryQuery (or subclass) object."
+                    or another CompoundQuery (or subclass) object."
                 )
 
     @abstractmethod
     def _perform_nary_op(self, query_results, gf):
-        """Perform the NaryQuery subclass's designated operation on the results of the subqueries.
+        """Perform the CompoundQuery subclass's designated operation on the results of the subqueries.
 
         Arguments:
             query_results (list): the results of the subqueries.
@@ -59,7 +62,7 @@ class NaryQuery(ABC):
         pass
 
 
-class AndQuery(NaryQuery):
+class ConjunctionQuery(CompoundQuery):
     """Compound Query that returns the intersection of the results
     of the subqueries"""
 
@@ -91,11 +94,7 @@ class AndQuery(NaryQuery):
 
 
 """Alias of AndQuery to signify the relationship to set Intersection"""
-IntersectionQuery = AndQuery
-
-
-"""Alias of AndQuery to signify the relationship to logical conjunction"""
-ConjunctionQuery = AndQuery
+IntersectionQuery = ConjunctionQuery
 
 
 def conjunction_op(lhs, rhs):
@@ -110,7 +109,7 @@ def conjunction_op(lhs, rhs):
     return AndQuery(lhs, rhs)
 
 
-class OrQuery(NaryQuery):
+class DisjunctionQuery(CompoundQuery):
     """Compound Query that returns the union of the results
     of the subqueries"""
 
@@ -142,11 +141,7 @@ class OrQuery(NaryQuery):
 
 
 """Alias of OrQuery to signify the relationship to set Union"""
-UnionQuery = OrQuery
-
-
-"""Alias of OrQuery to signify the relationship to logical disjunction"""
-DisjunctionQuery = OrQuery
+UnionQuery = DisjunctionQuery
 
 
 def disjunction_op(lhs, rhs):
@@ -161,7 +156,7 @@ def disjunction_op(lhs, rhs):
     return OrQuery(lhs, rhs)
 
 
-class XorQuery(NaryQuery):
+class ExcDisjunctionQuery(CompoundQuery):
     """Compound Query that returns the symmetric difference
     (i.e., set-based XOR) of the results of the subqueries"""
 
@@ -195,11 +190,7 @@ class XorQuery(NaryQuery):
 
 
 """Alias of XorQuery to signify the relationship to set Symmetric Difference"""
-SymDifferenceQuery = XorQuery
-
-
-"""Alias of XorQuery to signify the relationship to logical exclusive disjunction"""
-ExcDisjunctionQuery = XorQuery
+SymDifferenceQuery = ExcDisjunctionQuery
 
 
 def exc_disjunction_op(lhs, rhs):
@@ -214,7 +205,7 @@ def exc_disjunction_op(lhs, rhs):
     return XorQuery(lhs, rhs)
 
 
-class NotQuery(NaryQuery):
+class ComplementQuery(CompoundQuery):
     """Compound Query that returns all nodes in the GraphFrame that
     are not returned from the subquery."""
 
@@ -244,10 +235,6 @@ class NotQuery(NaryQuery):
         nodes = set(gf.graph.traverse())
         query_nodes = set(query_results[0])
         return list(nodes.difference(query_nodes))
-
-
-"""Alias of NotQuery to signify the relationship to logical complement"""
-ComplementQuery = NotQuery
 
 
 def complement_op(query):

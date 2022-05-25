@@ -9,19 +9,15 @@ from .string import StringQuery
 from .object import ObjectQuery
 from .compound import (
     NaryQuery,
-    AndQuery,
-    IntersectionQuery,
     ConjunctionQuery,
+    IntersectionQuery,
     conjunction_op,
-    OrQuery,
-    UnionQuery,
     DisjunctionQuery,
+    UnionQuery,
     disjunction_op,
-    XorQuery,
-    SymDifferenceQuery,
     ExcDisjunctionQuery,
+    SymDifferenceQuery,
     exc_disjunction_op,
-    NotQuery,
     ComplementQuery,
     complement_op,
 )
