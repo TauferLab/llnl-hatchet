@@ -13,7 +13,7 @@ except ImportError:
     ABC = ABCMeta("ABC", (object,), {"__slots__": ()})
 
 
-def FunctionQuery(ABC):
+def Query(ABC):
 
     def __init__(self):
         # Initialize container for query

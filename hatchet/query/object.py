@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .function import FunctionQuery
+from .function import Query
 from .exception import (
     InvalidQueryFilter,
     InvalidQueryPath,
@@ -19,7 +19,7 @@ from pandas import DataFrame
 import numpy as np  # noqa: F401
 
 
-class ObjectQuery(FunctionQuery):
+class ObjectQuery(Query):
 
     def __init__(self, query):
         """Create a new ObjectQuery object.

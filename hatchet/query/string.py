@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .function import FunctionQuery
+from .function import Query
 from .exception import (
     InvalidQueryFilter,
     InvalidQueryPath,
@@ -71,7 +71,7 @@ def filter_check_types(type_check, df_row, filt_lambda):
         return False
 
 
-class StringQuery(FunctionQuery):
+class StringQuery(Query):
     def __init__(self, cypher_query):
         if sys.version_info[0] == 2:
             super(StringQuery, self).__init__()
