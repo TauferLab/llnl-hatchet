@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .function import FunctionQuery
+from .query import Query
 from .string import StringQuery
 from .object import ObjectQuery
 from .exception import BadNumberNaryQueryArgs
@@ -36,7 +36,7 @@ class NaryQuery(ABC):
                 self.subqueries.append(ObjectQuery(query))
             elif isinstance(query, str):
                 self.subqueries.append(StringQuery(query))
-            elif issubclass(type(query), (FunctionQuery, NaryQuery)):
+            elif issubclass(type(query), (Query, NaryQuery)):
                 self.subqueries.append(query)
             else:
                 raise TypeError(
@@ -94,6 +94,22 @@ class AndQuery(NaryQuery):
 IntersectionQuery = AndQuery
 
 
+"""Alias of AndQuery to signify the relationship to logical conjunction"""
+ConjunctionQuery = AndQuery
+
+
+def conjunction_op(lhs, rhs):
+    """Create an AndQuery with this query and another.
+
+    Arguments:
+        other (GraphFrame): the other query to use in the AndQuery.
+
+    Returns:
+        (AndQuery): A query object representing the intersection of the two queries.
+    """
+    return AndQuery(lhs, rhs)
+
+
 class OrQuery(NaryQuery):
     """Compound Query that returns the union of the results
     of the subqueries"""
@@ -127,6 +143,22 @@ class OrQuery(NaryQuery):
 
 """Alias of OrQuery to signify the relationship to set Union"""
 UnionQuery = OrQuery
+
+
+"""Alias of OrQuery to signify the relationship to logical disjunction"""
+DisjunctionQuery = OrQuery
+
+
+def disjunction_op(lhs, rhs):
+    """Create an OrQuery with this query and another.
+
+    Arguments:
+        other (GraphFrame): the other query to use in the OrQuery.
+
+    Returns:
+        (OrQuery): A query object representing the union of the two queries.
+    """
+    return OrQuery(lhs, rhs)
 
 
 class XorQuery(NaryQuery):
@@ -166,6 +198,22 @@ class XorQuery(NaryQuery):
 SymDifferenceQuery = XorQuery
 
 
+"""Alias of XorQuery to signify the relationship to logical exclusive disjunction"""
+ExcDisjunctionQuery = XorQuery
+
+
+def exc_disjunction_op(lhs, rhs):
+    """Create a XorQuery with this query and another.
+
+    Arguments:
+        other (GraphFrame): the other query to use in the XorQuery.
+
+    Returns:
+        (XorQuery): A query object representing the symmetric difference of the two queries.
+    """
+    return XorQuery(lhs, rhs)
+
+
 class NotQuery(NaryQuery):
     """Compound Query that returns all nodes in the GraphFrame that
     are not returned from the subquery."""
@@ -198,8 +246,14 @@ class NotQuery(NaryQuery):
         return list(nodes.difference(query_nodes))
 
 
-class Query(FunctionQuery):
+"""Alias of NotQuery to signify the relationship to logical complement"""
+ComplementQuery = NotQuery
 
-    def __init__(self, object_or_string_query=None):
-        if object_or_string_query is not None:
-            if isinstance(object_or_string_query, list):
+
+def complement_op(query):
+    """Create a NotQuery with this query.
+
+    Returns:
+        (NotQuery): A query object representing all nodes that don't match this query.
+    """
+    return NotQuery(query)
