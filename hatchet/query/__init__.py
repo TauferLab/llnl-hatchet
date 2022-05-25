@@ -21,6 +21,16 @@ from .compound import (
     ComplementQuery,
     complement_op,
 )
+from .deprecated import (
+    AbstractQuery,
+    NaryQuery,
+    QueryMatcher,
+    CypherQuery,
+    AndQuery,
+    OrQuery,
+    XorQuery,
+    NotQuery,
+)
 
 # Set the following bitwise operators for Query:
 #  * __and__ (q1 & q2)

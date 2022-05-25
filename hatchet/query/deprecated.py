@@ -15,6 +15,7 @@ from .compound import (
     ComplementQuery,
 )
 
+import warnings
 from abc import abstractmethod
 
 try:
@@ -46,9 +47,6 @@ class AbstractQuery(ABC):
 
 class NaryQuery(AbstractQuery, CompoundQuery):
 
-    def __init__(self, *args):
-        ComplementQuery.__init__(self, *args)
-
     def apply(self, gf):
         """Apply the NaryQuery to a GraphFrame.
 
@@ -67,6 +65,13 @@ class NaryQuery(AbstractQuery, CompoundQuery):
 class QueryMatcher(AbstractQuery, ObjectQuery, Query):
 
     def __init__(self, query=None):
+        warnings.warn(
+            """You are using the old Query Language class QueryMatcher!
+            This class is deprecated!
+            Please switch to either the Query or ObjectQuery class!
+            """,
+            DeprecationWarning
+        )
         if query is None:
             Query.__init__(self)
         else:
@@ -79,28 +84,63 @@ class QueryMatcher(AbstractQuery, ObjectQuery, Query):
 class CypherQuery(QueryMatcher, StringQuery):
 
     def __init__(self, cypher_query):
+        warnings.warn(
+            """You are using the old Query Language class CypherQuery!
+            This class is deprecated!
+            Please switch to the StringQuery class!
+            """,
+            DeprecationWarning
+        )
         StringQuery.__init__(self, cypher_query)
 
 
 class AndQuery(NaryQuery, ConjunctionQuery):
 
     def __init__(self, *args):
+        warnings.warn(
+            """AndQuery is deprecated in its current form!
+            In the future, AndQuery will still be available as an alias to ConjunctionQuery,
+            but AndQuery's "apply" method will be removed!
+            """,
+            DeprecationWarning
+        )
         ConjunctionQuery.__init__(self, *args)
 
 
 class OrQuery(NaryQuery, DisjunctionQuery):
 
     def __init__(self, *args):
+        warnings.warn(
+            """OrQuery is deprecated in its current form!
+            In the future, OrQuery will still be available as an alias to DisjunctionQuery,
+            but OrQuery's "apply" method will be removed!
+            """,
+            DeprecationWarning
+        )
         DisjunctionQuery.__init__(self, *args)
 
 
 class XorQuery(NaryQuery, ExcDisjunctionQuery):
 
     def __init__(self, *args):
+        warnings.warn(
+            """XorQuery is deprecated in its current form!
+            In the future, XorQuery will still be available as an alias to ExcDisjunctionQuery,
+            but XorQuery's "apply" method will be removed!
+            """,
+            DeprecationWarning
+        )
         ExcDisjunctionQuery.__init__(self, *args)
 
 
 class NotQuery(NaryQuery, ComplementQuery):
 
     def __init__(self, *args):
+        warnings.warn(
+            """NotQuery is deprecated in its current form!
+            In the future, NotQuery will still be available as an alias to ComplementQuery,
+            but NotQuery's "apply" method will be removed!
+            """,
+            DeprecationWarning
+        )
         ComplementQuery.__init__(self, *args)
