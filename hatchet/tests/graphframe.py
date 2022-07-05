@@ -1244,3 +1244,29 @@ def test_generate_exclusive_columns_w_multi_index(calc_pi_hpct_db):
     gf_time.generate_exclusive_columns()
     assert "time (exc)" in gf_time.exc_metrics
     assert gf.dataframe["time"].equals(gf_time.dataframe["time (exc)"])
+
+
+def test_rename_metrics(mock_graph_literal):
+    gf = GraphFrame.from_literal(mock_graph_literal)
+
+    assert sorted(gf.inc_metrics) == sorted(["time (inc)"])
+    assert sorted(gf.exc_metrics) == sorted(["time"])
+    assert "time" in gf.dataframe.columns
+    assert "time (inc)" in gf.dataframe.columns
+
+    gf.default_metric = "time"
+
+    gf.rename_metric_columns(
+        {
+            "time": "exclusive_time",
+            "time (inc)": "inclusive_time"
+        }
+    )
+
+    assert sorted(gf.inc_metrics) == sorted(["inclusive_time"])
+    assert sorted(gf.exc_metrics) == sorted(["exclusive_time"])
+    assert gf.default_metric == "exclusive_time"
+    assert "time" not in gf.dataframe.columns
+    assert "time (inc)" not in gf.dataframe.columns
+    assert "exclusive_time" in gf.dataframe.columns
+    assert "inclusive_time" in gf.dataframe.columns
