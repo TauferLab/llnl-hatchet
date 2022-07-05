@@ -806,6 +806,16 @@ class GraphFrame:
         self.subgraph_sum(self.exc_metrics, self.inc_metrics)
         self.inc_metrics = list(set(self.inc_metrics + old_inc_metrics))
 
+    def rename_metric_columns(self, mapping):
+        self.dataframe.rename(columns=mapping, inplace=True)
+        for old_name, new_name in mapping.items():
+            if old_name in self.inc_metrics:
+                self.inc_metrics[self.inc_metrics.index(old_name)] = new_name
+            if old_name in self.exc_metrics:
+                self.exc_metrics[self.exc_metrics.index(old_name)] = new_name
+            if old_name == self.default_metric:
+                self.default_metric = new_name
+
     def show_metric_columns(self):
         """Returns a list of dataframe column labels."""
         return list(self.exc_metrics + self.inc_metrics)
