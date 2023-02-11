@@ -5,6 +5,7 @@
 
 build
 docs/_build
+sphinx-thebe-docs/_build
 hatchet/cython_modules/libs/graphframe_modules.*.so
 hatchet/cython_modules/libs/reader_modules.*.so
 hatchet/vis/*node_modules*
