@@ -56,6 +56,7 @@ class ConsoleRenderer:
             return result
 
         self.metric_columns = kwargs["metric_column"]
+        self.annotation_column = kwargs["annotation_column"]
         self.precision = kwargs["precision"]
         self.name = kwargs["name_column"]
         self.expand = kwargs["expand_name"]
@@ -213,11 +214,16 @@ class ConsoleRenderer:
                 df_index = node
 
             node_metric = dataframe.loc[df_index, self.primary_metric]
+            node_annotation = ""
+            if self.annotation_column is not None:
+                node_annotation = " {}".format(
+                    dataframe.loc[df_index, self.annotation_column])
 
             metric_precision = "{:." + str(self.precision) + "f}"
             metric_str = (
                 self._ansi_color_for_metric(node_metric)
                 + metric_precision.format(node_metric)
+                + node_annotation
                 + self.colors.end
             )
 
