@@ -5,6 +5,8 @@
 
 from .errors import InvalidQueryPath
 
+import pandas as pd
+
 
 class Query(object):
     """Class for representing and building Hatchet Call Path Queries"""
@@ -13,7 +15,7 @@ class Query(object):
         """Create new Query"""
         self.query_pattern = []
 
-    def match(self, quantifier=".", predicate=lambda row: True):
+    def match(self, quantifier=".", predicate=lambda df: pd.Series([True] * len(df.index), dtype=bool)):
         """Start a query with a root node described by the arguments.
 
         Arguments:
@@ -28,7 +30,7 @@ class Query(object):
         self._add_node(quantifier, predicate)
         return self
 
-    def rel(self, quantifier=".", predicate=lambda row: True):
+    def rel(self, quantifier=".", predicate=lambda df: pd.Series([True] * len(df.index), dtype=bool)):
         """Add a new node to the end of the query.
 
         Arguments:
@@ -45,7 +47,7 @@ class Query(object):
         self._add_node(quantifier, predicate)
         return self
 
-    def relation(self, quantifer=".", predicate=lambda row: True):
+    def relation(self, quantifer=".", predicate=lambda df: pd.Series([True] * len(df.index), dtype=bool)):
         """Alias to Query.rel. Add a new node to the end of the query.
 
         Arguments:
@@ -65,7 +67,7 @@ class Query(object):
         """Allows users to iterate over the Query like a list."""
         return iter(self.query_pattern)
 
-    def _add_node(self, quantifer=".", predicate=lambda row: True):
+    def _add_node(self, quantifer=".", predicate=lambda df: pd.Series([True] * len(df.index), dtype=bool)):
         """Add a node to the query.
 
         Arguments:
