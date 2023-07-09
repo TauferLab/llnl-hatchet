@@ -10,12 +10,12 @@ import numpy as np  # noqa: F401
 from textx import metamodel_from_str
 from textx.exceptions import TextXError
 
-from .errors import InvalidQueryPath, InvalidQueryFilter, RedundantQueryFilterWarning
-from .query import Query
+from hatchet.query.errors import InvalidQueryPath, InvalidQueryFilter, RedundantQueryFilterWarning
+from hatchet.query.v2.query import Query
 
 
 # PEG grammar for the String-based dialect
-CYPHER_GRAMMAR = u"""
+STRING_DIALECT_GRAMMAR = u"""
 FullQuery: match_expr=MatchExpr where_expr=WhereExpr;
 MatchExpr: 'MATCH' path=PathQuery;
 PathQuery: '(' nodes=NodeExpr ')'('->' '(' nodes=NodeExpr ')')*;
@@ -52,7 +52,7 @@ NumInf: name=ID '.' metric=STRING 'IS INF';
 NumNotInf: name=ID '.' metric=STRING 'IS NOT INF';
 """
 
-cypher_query_mm = metamodel_from_str(CYPHER_GRAMMAR, auto_init_attributes=False)
+cypher_query_mm = metamodel_from_str(STRING_DIALECT_GRAMMAR, auto_init_attributes=False)
 
 
 def cname(obj):

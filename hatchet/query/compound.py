@@ -7,10 +7,10 @@ from abc import abstractmethod
 
 import sys
 
-from .query import Query
-from .string_dialect import parse_string_dialect
-from .object_dialect import ObjectQuery
-from .errors import BadNumberNaryQueryArgs
+from hatchet.query.query import Query
+from hatchet.query.string_dialect import parse_string_dialect
+from hatchet.query.object_dialect import ObjectQuery
+from hatchet.query.errors import BadNumberNaryQueryArgs
 
 
 class CompoundQuery(object):

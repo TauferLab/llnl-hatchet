@@ -10,8 +10,8 @@ from pandas.api.types import (
 )
 import sys
 
-from .errors import InvalidQueryPath, InvalidQueryFilter
-from .query import Query
+from hatchet.query.errors import InvalidQueryPath, InvalidQueryFilter
+from hatchet.query.v2.query import Query
 
 
 def _process_predicate(attr_filter):

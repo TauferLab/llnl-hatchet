@@ -13,8 +13,8 @@ from textx import metamodel_from_str
 from textx.exceptions import TextXError
 import warnings
 
-from .errors import InvalidQueryPath, InvalidQueryFilter, RedundantQueryFilterWarning
-from .query import Query
+from hatchet.query.errors import InvalidQueryPath, InvalidQueryFilter, RedundantQueryFilterWarning
+from hatchet.query.query import Query
 
 
 # PEG grammar for the String-based dialect

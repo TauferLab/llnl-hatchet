@@ -14,18 +14,18 @@ except ImportError:
 import sys
 import warnings
 
-from .query import Query
-from .compound import (
+from hatchet.query.query import Query
+from hatchet.query.compound import (
     CompoundQuery,
     ConjunctionQuery,
     DisjunctionQuery,
     ExclusiveDisjunctionQuery,
     NegationQuery,
 )
-from .object_dialect import ObjectQuery
-from .string_dialect import parse_string_dialect
-from .engine import QueryEngine
-from .errors import BadNumberNaryQueryArgs, InvalidQueryPath
+from hatchet.query.object_dialect import ObjectQuery
+from hatchet.query.string_dialect import parse_string_dialect
+from hatchet.query.engine import QueryEngine
+from hatchet.query.errors import BadNumberNaryQueryArgs, InvalidQueryPath
 
 
 # QueryEngine object for running the legacy "apply" methods

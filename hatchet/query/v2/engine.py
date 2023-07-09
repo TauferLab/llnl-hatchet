@@ -5,12 +5,12 @@
 
 import pandas as pd
 
-from .errors import MultiIndexModeMismatch
-from ..node import traversal_order
-from .query import Query
-from .compound import CompoundQuery
-from .object_dialect import ObjectQuery
-from .string_dialect import parse_string_dialect
+from hatchet.query.errors import MultiIndexModeMismatch
+from hatchet.node import traversal_order
+from hatchet.query.v2.query import Query
+from hatchet.query.v2.compound import CompoundQuery
+from hatchet.query.v2.object_dialect import ObjectQuery
+from hatchet.query.v2.string_dialect import parse_string_dialect
 
 
 class QueryEngine:

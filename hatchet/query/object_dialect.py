@@ -13,8 +13,8 @@ from pandas.api.types import (
 import re
 import sys
 
-from .errors import InvalidQueryPath, InvalidQueryFilter, MultiIndexModeMismatch
-from .query import Query
+from hatchet.query.errors import InvalidQueryPath, InvalidQueryFilter, MultiIndexModeMismatch
+from hatchet.query.query import Query
 
 
 def _process_multi_index_mode(apply_result, multi_index_mode):

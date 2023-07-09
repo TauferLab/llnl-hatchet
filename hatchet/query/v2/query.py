@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .errors import InvalidQueryPath
+from hatchet.query.errors import InvalidQueryPath
 
 import pandas as pd
 

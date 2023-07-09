@@ -6,12 +6,12 @@
 from itertools import groupby
 import pandas as pd
 
-from .errors import InvalidQueryFilter
-from ..node import Node, traversal_order
-from .query import Query
-from .compound import CompoundQuery
-from .object_dialect import ObjectQuery
-from .string_dialect import parse_string_dialect
+from hatchet.query.errors import InvalidQueryFilter
+from hatchet.node import Node, traversal_order
+from hatchet.query.query import Query
+from hatchet.query.compound import CompoundQuery
+from hatchet.query.object_dialect import ObjectQuery
+from hatchet.query.string_dialect import parse_string_dialect
 
 
 class QueryEngine:
