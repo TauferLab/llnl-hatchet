@@ -6,25 +6,25 @@
 # Make flake8 ignore unused names in this file
 # flake8: noqa: F401
 
-from .query import Query
-from .compound import (
+from hatchet.query.query import Query
+from hatchet.query.compound import (
     CompoundQuery,
     ConjunctionQuery,
     DisjunctionQuery,
     ExclusiveDisjunctionQuery,
     NegationQuery,
 )
-from .object_dialect import ObjectQuery
-from .string_dialect import StringQuery, parse_string_dialect
-from .engine import QueryEngine
-from .errors import (
+from hatchet.query.object_dialect import ObjectQuery
+from hatchet.query.string_dialect import StringQuery, parse_string_dialect
+from hatchet.query.engine import QueryEngine
+from hatchet.query.errors import (
     InvalidQueryPath,
     InvalidQueryFilter,
     RedundantQueryFilterWarning,
     BadNumberNaryQueryArgs,
 )
 
-from .compat import (
+from hatchet.query.compat import (
     AbstractQuery,
     NaryQuery,
     AndQuery,

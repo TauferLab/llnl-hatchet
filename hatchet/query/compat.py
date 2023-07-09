@@ -160,9 +160,7 @@ class AndQuery(NaryQuery):
             *args (AbstractQuery, str, or list): the subqueries to be performed
         """
         warnings.warn(
-            "Old-style queries are deprecated and will be removed in the \
-                    future. Please use new-style queries (e.g., \
-                    hatchet.query.ConjunctionQuery) instead.",
+            "Old-style queries are deprecated and will be removed in the \nfuture. Please use new-style queries (e.g., \nhatchet.query.ConjunctionQuery) instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -193,9 +191,7 @@ class OrQuery(NaryQuery):
             *args (AbstractQuery, str, or list): the subqueries to be performed
         """
         warnings.warn(
-            "Old-style queries are deprecated and will be removed in the \
-                    future. Please use new-style queries (e.g., \
-                    hatchet.query.DisjunctionQuery) instead.",
+            "Old-style queries are deprecated and will be removed in the \nfuture. Please use new-style queries (e.g., \nhatchet.query.DisjunctionQuery) instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -226,9 +222,7 @@ class XorQuery(NaryQuery):
             *args (AbstractQuery, str, or list): the subqueries to be performed
         """
         warnings.warn(
-            "Old-style queries are deprecated and will be removed in the \
-                    future. Please use new-style queries (e.g., \
-                    hatchet.query.ExclusiveDisjunctionQuery) instead.",
+            "Old-style queries are deprecated and will be removed in the \nfuture. Please use new-style queries (e.g., \nhatchet.query.ExclusiveDisjunctionQuery) instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -259,9 +253,7 @@ class NotQuery(NaryQuery):
             *args (AbstractQuery, str, or list): the subquery to be performed
         """
         warnings.warn(
-            "Old-style queries are deprecated and will be removed in the \
-                    future. Please use new-style queries (e.g., \
-                    hatchet.query.NegationQuery) instead.",
+            "Old-style queries are deprecated and will be removed in the \nfuture. Please use new-style queries (e.g., \nhatchet.query.NegationQuery) instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -288,11 +280,7 @@ class QueryMatcher(AbstractQuery):
                                     into its internal representation
         """
         warnings.warn(
-            "Old-style queries are deprecated and will be removed in the \
-                    future. Please use new-style queries instead. \
-                    For QueryMatcher, the equivalent new-style queries are \
-                    hatchet.query.Query for base-syntax queries and \
-                    hatchet.query.ObjectQuery for the object-dialect.",
+            "Old-style queries are deprecated and will be removed in the \nfuture. Please use new-style queries instead. \nFor QueryMatcher, the equivalent new-style queries are \nhatchet.query.Query for base-syntax queries and \nhatchet.query.ObjectQuery for the object-dialect.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -363,10 +351,7 @@ class CypherQuery(QueryMatcher):
             cypher_query (str): the String-based query
         """
         warnings.warn(
-            "Old-style queries are deprecated and will be removed in the \
-                    future. Please use new-style queries instead. \
-                    For CypherQuery, the equivalent new-style query is \
-                    hatchet.query.StringQuery.",
+            "Old-style queries are deprecated and will be removed in the \nfuture. Please use new-style queries instead. \nFor CypherQuery, the equivalent new-style query is \nhatchet.query.StringQuery.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -392,10 +377,7 @@ def parse_cypher_query(cypher_query):
         (CypherQuery): a Hatchet query for this String-based query
     """
     warnings.warn(
-        "Old-style queries are deprecated and will be removed in the \
-                future. Please use new-style queries instead. \
-                For parse_cypher_query, the equivalent new-style function is \
-                hatchet.query.parse_string_dialect.",
+        "Old-style queries are deprecated and will be removed in the \nfuture. Please use new-style queries instead. \nFor parse_cypher_query, the equivalent new-style function is \nhatchet.query.parse_string_dialect.",
         DeprecationWarning,
         stacklevel=2,
     )
