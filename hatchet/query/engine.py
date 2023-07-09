@@ -3,11 +3,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-from itertools import groupby
 import pandas as pd
 
-from .errors import InvalidQueryFilter
-from ..node import Node, traversal_order
+from .errors import MultiIndexModeMismatch
+from ..node import traversal_order
 from .query import Query
 from .compound import CompoundQuery
 from .object_dialect import ObjectQuery
@@ -17,16 +16,19 @@ from .string_dialect import parse_string_dialect
 class QueryEngine:
 
     """Class for applying queries to GraphFrames."""
+    
+    _available_modes = (
+        "off",
+        "any",
+        "all",
+    )
 
     def __init__(self):
         """Creates the QueryEngine."""
-        self.search_cache = {}
+        self.candidates = []
+        self.path_cache = {}
 
-    def reset_cache(self):
-        """Resets the cache in the QueryEngine."""
-        self.search_cache = {}
-
-    def apply(self, query, graph, dframe):
+    def apply(self, query, graph, dframe, multi_index_mode="off"):
         """Apply the query to a GraphFrame.
 
         Arguments:
@@ -38,15 +40,9 @@ class QueryEngine:
             (list): A list representing the set of nodes from paths that match the query
         """
         if issubclass(type(query), Query):
-            self.reset_cache()
-            matches = []
-            visited = set()
-            for root in sorted(graph.roots, key=traversal_order):
-                self._apply_impl(query, dframe, root, visited, matches)
-            assert len(visited) == len(graph)
-            matched_node_set = list(set().union(*matches))
-            # return matches
-            return matched_node_set
+            self._reset()
+            self._init(query, dframe, multi_index_mode)
+            return self._apply_impl(graph, query)
         elif issubclass(type(query), CompoundQuery):
             results = []
             for subq in query.subqueries:
@@ -60,199 +56,122 @@ class QueryEngine:
         else:
             raise TypeError("Invalid query data type ({})".format(str(type(query))))
 
-    def _cache_node(self, node, query, dframe):
-        """Cache (Memoize) the parts of the query that the node matches.
-
-        Arguments:
-            node (Node): the Node to be cached
-            query (Query): the query being applied
-            dframe (pandas.DataFrame): the DataFrame containing node metrics and other data
-        """
-        assert isinstance(node, Node)
-        matches = []
-        # Applies each filtering function to the node to cache which
-        # query nodes the current node matches.
-        for i, node_query in enumerate(query):
-            _, filter_func = node_query
-            row = None
-            if isinstance(dframe.index, pd.MultiIndex):
-                row = pd.concat([dframe.loc[node]], keys=[node], names=["node"])
-            else:
-                row = dframe.loc[node]
-            if filter_func(row):
-                matches.append(i)
-        self.search_cache[node._hatchet_nid] = matches
-
-    def _match_0_or_more(self, query, dframe, node, wcard_idx):
-        """Process a "*" predicate in the query on a subgraph.
-
-        Arguments:
-            query (Query): the query being applied
-            dframe (pandas.DataFrame): the DataFrame containing the metrics for the queried GraphFrame
-            node (Node): the node being queried against the "*" predicate
-            wcard_idx (int): the index into the query associated with the "*" predicate
-
-        Returns:
-            (list): a list of lists representing the paths rooted at "node" that match the "*" predicate
-                    and/or the next query node. Will return None if there is no match for the "*"
-                    predicate or the next query node.
-        """
-        # Cache the node if it's not already cached
-        if node._hatchet_nid not in self.search_cache:
-            self._cache_node(node, query, dframe)
-        # If the node matches with the next non-wildcard query node,
-        # end the recursion and return the node.
-        if wcard_idx + 1 in self.search_cache[node._hatchet_nid]:
-            return [[]]
-        # If the node matches the "*" wildcard query, recursively
-        # apply this function to the current node's children. Then,
-        # collect their returned matches, and prepend the current node.
-        elif wcard_idx in self.search_cache[node._hatchet_nid]:
-            matches = []
-            if len(node.children) == 0:
-                if wcard_idx == len(query) - 1:
-                    return [[node]]
+    def _reset(self):
+        """Resets the cache in the QueryEngine."""
+        self.candidates = []
+        self.path_cache = {}
+        
+    def _init(self, query, dframe, multi_index_mode):
+        if multi_index_mode not in self._available_modes:
+            raise ValueError("Invalid multi-index mode")
+        predicate_outputs = []
+        for _, pred in query.query_pattern:
+            predicate_outputs.append(pred(dframe))
+        predicate_vals = pd.DataFrame(
+            {i: po for i, po in enumerate(predicate_outputs)}
+        )
+        if isinstance(predicate_vals.index, pd.MultiIndex):
+            if multi_index_mode == "off":
+                raise MultiIndexModeMismatch("Cannot use 'off' mode with multi-indexed data")
+            level_names = list(predicate_vals.index.names)
+            level_names.remove("node")
+            predicate_vals.reset_index(inplace=True)
+            predicate_vals.drop(columns=level_names, inplace=True)
+            predicate_vals = predicate_vals.groupby(["node"]).aggregate(
+                multi_index_mode
+            )
+        for i in range(len(query.query_pattern)):
+            self.candidates.append(
+                predicate_vals.index[predicate_vals[i]].tolist()
+            )
+            
+    def _apply_impl(self, graph, query):
+        matches = set()
+        for root in sorted(graph.roots, key=traversal_order):
+            root_matches = self._find_matches_from_node(
+                root,
+                query,
+                0
+            )
+            if root_matches is None:
+                continue
+            for p in root_matches:
+                for node in p:
+                    matches.add(n)
+        return list(matches)
+            
+    def _find_matches_from_node(self, curr_node, query, query_idx):
+        # If we've already visited this graph node while processing this
+        # query node, just return the cached value
+        if curr_node in self.path_cache[(curr_node, query_idx)]:
+            return self.path_cache[(curr_node, query_idx)]
+        next_query_idx = None
+        # If the query node has a match 1 quantifier:
+        if query.query_pattern[query_idx][0] == ".":
+            # Return an invalid result if the graph node doesn't
+            # match the query node
+            if curr_node not in self.candidates[query_idx]:
+                self.path_cache[(curr_node, query_idx)] = None
                 return None
-            for child in sorted(node.children, key=traversal_order):
-                sub_match = self._match_0_or_more(query, dframe, child, wcard_idx)
-                if sub_match is not None:
-                    matches.extend(sub_match)
-            if len(matches) == 0:
-                return None
-            tmp = set(tuple(m) for m in matches)
-            matches = [list(t) for t in tmp]
-            return [[node] + m for m in matches]
-        # If the current node doesn't match the current "*" wildcard or
-        # the next non-wildcard query node, return None.
-        else:
-            if wcard_idx == len(query) - 1:
-                return [[]]
-            return None
-
-    def _match_1(self, query, dframe, node, idx):
-        """Process a "." predicate in the query on a subgraph.
-
-        Arguments:
-            query (Query): the query being applied
-            dframe (pandas.DataFrame): the DataFrame containing the metrics for the queried GraphFrame
-            node (Node): the node being queried against the "." predicate
-            idx (int): the index into the query associated with the "." predicate
-
-        Returns:
-            (list): A list of lists representing the children of "node" that match the "." predicate being considered.
-                    Will return None if there are no matches for the "." predicate.
-        """
-        if node._hatchet_nid not in self.search_cache:
-            self._cache_node(node, query, dframe)
-        matches = []
-        for child in sorted(node.children, key=traversal_order):
-            # Cache the node if it's not already cached
-            if child._hatchet_nid not in self.search_cache:
-                self._cache_node(child, query, dframe)
-            if idx in self.search_cache[child._hatchet_nid]:
-                matches.append([child])
-        # To be consistent with the other matching functions, return
-        # None instead of an empty list.
-        if len(matches) == 0:
-            return None
-        return matches
-
-    def _match_pattern(self, query, dframe, pattern_root, match_idx):
-        """Try to match the query pattern starting at the provided root node.
-
-        Arguments:
-            query (Query): the query being applied
-            dframe (pandas.DataFrame): the DataFrame containing the metrics for the queried GraphFrame
-            pattern_root (Node): the current node considered in the query
-            match_idx (int): the current index into the query
-
-        Returns:
-            (list): A list of lists representing the paths rooted at "pattern_root" that match the query
-        """
-        assert isinstance(pattern_root, Node)
-        # Starting query node
-        pattern_idx = match_idx + 1
-        if query.query_pattern[match_idx][0] == "*":
-            pattern_idx = 0
-        # Starting matching pattern
-        matches = [[pattern_root]]
-        while pattern_idx < len(query):
-            # Get the wildcard type
-            wcard, _ = query.query_pattern[pattern_idx]
-            new_matches = []
-            # Consider each existing match individually so that more
-            # nodes can be added to them.
-            for m in matches:
-                sub_match = []
-                # Get the portion of the subgraph that matches the next
-                # part of the query.
-                if wcard == ".":
-                    s = self._match_1(query, dframe, m[-1], pattern_idx)
-                    if s is None:
-                        sub_match.append(s)
-                    else:
-                        sub_match.extend(s)
-                elif wcard == "*":
-                    if len(m[-1].children) == 0:
-                        sub_match.append([])
-                    else:
-                        for child in sorted(m[-1].children, key=traversal_order):
-                            s = self._match_0_or_more(query, dframe, child, pattern_idx)
-                            if s is None:
-                                sub_match.append(s)
-                            else:
-                                sub_match.extend(s)
+            # Otherwise, set next_query_idx to point to the next
+            # query node
+            next_query_idx = query_idx + 1
+        # If the query node has a match 0 or more quantifier:
+        if query.query_pattern[query_idx][0] == "*":
+            # Check if the graph node matches the next query node
+            # because that's how "*" is broken
+            # If the graph node does match the next query node,
+            # recursively call this function to process the next
+            # query node
+            if curr_node in self.candidates[query_idx + 1]:
+                return self._find_matches_from_node(
+                    curr_node,
+                    query,
+                    query_idx + 1
+                )
+            # If the graph node does not match the current query node,
+            # the state of the current path depends on whether the query
+            # node is the last node of the query. If it is the last node,
+            # return an "end-of-path" result. Otherwise, return an invalid result
+            elif curr_node not in self.candidates[query_idx]:
+                if query_idx < len(query) - 1:
+                    self.path_cache[(curr_node, query_idx)] = None
+                    return None
                 else:
-                    raise InvalidQueryFilter(
-                        'Query wildcards must (internally) be one of "." or "*"'
-                    )
-                # Merge the next part of the match path with the
-                # existing part.
-                for s in sub_match:
-                    if s is not None:
-                        new_matches.append(m + s)
-                new_matches = [uniq_match for uniq_match, _ in groupby(new_matches)]
-            # Overwrite the old matches with the updated matches
-            matches = new_matches
-            # If all the existing partial matches were not able to be
-            # expanded into full matches, return None.
-            if len(matches) == 0:
-                return None
-            # Update the query node
-            pattern_idx += 1
-        return matches
-
-    def _apply_impl(self, query, dframe, node, visited, matches):
-        """Traverse the subgraph with the specified root, and collect all paths that match the query.
-
-        Arguments:
-            query (Query): the query being applied
-            dframe (pandas.DataFrame): the DataFrame containing the metrics for the queried GraphFrame
-            node (Node): the root node of the subgraph that is being queried
-            visited (set): a set that keeps track of what nodes have been visited in the traversal to minimize the amount of work that is repeated
-            matches (list): the list in which the final set of matches are stored
-        """
-        # If the node has already been visited (or is None for some
-        # reason), skip it.
-        if node is None or node._hatchet_nid in visited:
-            return
-        # Cache the node if it's not already cached
-        if node._hatchet_nid not in self.search_cache:
-            self._cache_node(node, query, dframe)
-        # If the node matches the starting/root node of the query,
-        # try to get all query matches in the subgraph rooted at
-        # this node.
-        if query.query_pattern[0][0] == "*":
-            if 1 in self.search_cache[node._hatchet_nid]:
-                sub_match = self._match_pattern(query, dframe, node, 1)
-                if sub_match is not None:
-                    matches.extend(sub_match)
-        if 0 in self.search_cache[node._hatchet_nid]:
-            sub_match = self._match_pattern(query, dframe, node, 0)
-            if sub_match is not None:
-                matches.extend(sub_match)
-        # Note that the node is now visited.
-        visited.add(node._hatchet_nid)
-        # Continue the Depth First Search.
-        for child in sorted(node.children, key=traversal_order):
-            self._apply_impl(query, dframe, child, visited, matches)
+                    self.path_cache[(curr_node, query_idx)] = [[]]
+                    return [()]
+            # If neither of the above conditions are hit, we will continue
+            # processing the current query node
+            next_query_idx = query_idx
+        child_paths = set()
+        # For each child of the graph node
+        for child in curr_node.children:
+            # Recursively call this function to process the next graph node
+            subpaths = self._find_matches_from_node(
+                child,
+                query,
+                next_query_idx
+            )
+            # If the next graph node produces no valid sub-matches,
+            # ignore its results
+            if child_paths is None:
+                continue
+            # If the next graph node produces valid sub-matches,
+            # add those matches to child_paths
+            # Cast the sub-matches to tuples so that they can be added to
+            # the set
+            for p in subpaths:
+                child_paths.add(tuple(p))
+        # If we ended up with no valid sub-matches,
+        # the current path is invalid, so we return None
+        if len(child_paths) == 0:
+            self.path_cache[(curr_node, query_idx)] = None
+            return None
+        # Prepend the current node to all the sub-matches
+        # and return those sub-matches
+        valid_child_paths = [
+            (curr_node, *p)
+            for p in child_paths
+        ]
+        self.path_cache[(curr_node, query_idx)] = valid_child_paths
+        return valid_child_paths
