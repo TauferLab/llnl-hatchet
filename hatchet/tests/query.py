@@ -1171,7 +1171,7 @@ def test_string_disj_compound_query(mock_graph_literal):
     )
 
 
-def test_cypher_exc_disj_compound_query(mock_graph_literal):
+def test_string_exc_disj_compound_query(mock_graph_literal):
     gf = GraphFrame.from_literal(mock_graph_literal)
     compound_query1 = parse_string_dialect(
         u"""
