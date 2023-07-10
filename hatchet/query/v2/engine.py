@@ -67,8 +67,9 @@ class QueryEngine:
         predicate_outputs = []
         for _, pred in query.query_pattern:
             predicate_outputs.append(pred(dframe))
-        predicate_vals = pd.DataFrame(
-            {i: po for i, po in enumerate(predicate_outputs)}
+        predicate_vals = pd.concat(
+            {i: po for i, po in enumerate(predicate_outputs)},
+            axis=1
         )
         if isinstance(predicate_vals.index, pd.MultiIndex):
             if multi_index_mode == "off":
@@ -87,23 +88,23 @@ class QueryEngine:
             
     def _apply_impl(self, graph, query):
         matches = set()
-        for root in sorted(graph.roots, key=traversal_order):
-            root_matches = self._find_matches_from_node(
-                root,
+        for starting_candidate in sorted(self.candidates[0], key=traversal_order):
+            starting_matches = self._find_matches_from_node(
+                starting_candidate,
                 query,
                 0
             )
-            if root_matches is None:
+            if starting_matches is None:
                 continue
-            for p in root_matches:
+            for p in starting_matches:
                 for node in p:
-                    matches.add(n)
+                    matches.add(node)
         return list(matches)
             
     def _find_matches_from_node(self, curr_node, query, query_idx):
         # If we've already visited this graph node while processing this
         # query node, just return the cached value
-        if curr_node in self.path_cache[(curr_node, query_idx)]:
+        if (curr_node, query_idx) in self.path_cache:
             return self.path_cache[(curr_node, query_idx)]
         next_query_idx = None
         # If the query node has a match 1 quantifier:
@@ -113,17 +114,23 @@ class QueryEngine:
             if curr_node not in self.candidates[query_idx]:
                 self.path_cache[(curr_node, query_idx)] = None
                 return None
+            if query_idx == len(query) - 1:
+                self.path_cache[(curr_node, query_idx)] = [(curr_node)]
+                return [(curr_node,)]
+            if query_idx == len(query) - 2 and query.query_pattern[query_idx + 1][0] == "*":
+                self.path_cache[(curr_node, query_idx)] = [(curr_node)]
+                return [(curr_node,)]
             # Otherwise, set next_query_idx to point to the next
             # query node
             next_query_idx = query_idx + 1
         # If the query node has a match 0 or more quantifier:
-        if query.query_pattern[query_idx][0] == "*":
+        elif query.query_pattern[query_idx][0] == "*":
             # Check if the graph node matches the next query node
             # because that's how "*" is broken
             # If the graph node does match the next query node,
             # recursively call this function to process the next
             # query node
-            if curr_node in self.candidates[query_idx + 1]:
+            if query_idx < len(query) - 1 and curr_node in self.candidates[query_idx + 1]:
                 return self._find_matches_from_node(
                     curr_node,
                     query,
@@ -138,8 +145,10 @@ class QueryEngine:
                     self.path_cache[(curr_node, query_idx)] = None
                     return None
                 else:
-                    self.path_cache[(curr_node, query_idx)] = [[]]
+                    self.path_cache[(curr_node, query_idx)] = [()]
                     return [()]
+            elif query_idx == len(query) - 1 and len(curr_node.children) == 0:
+                return [(curr_node,)]
             # If neither of the above conditions are hit, we will continue
             # processing the current query node
             next_query_idx = query_idx
@@ -154,7 +163,7 @@ class QueryEngine:
             )
             # If the next graph node produces no valid sub-matches,
             # ignore its results
-            if child_paths is None:
+            if subpaths is None:
                 continue
             # If the next graph node produces valid sub-matches,
             # add those matches to child_paths

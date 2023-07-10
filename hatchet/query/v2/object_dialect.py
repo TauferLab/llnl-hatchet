@@ -18,7 +18,7 @@ def _process_predicate(attr_filter):
     """Converts high-level API attribute filter to a lambda"""
     compops = ("<", ">", "==", ">=", "<=", "<>", "!=")  # ,
     pandas_exprs = []
-    for metric, cond in attr_filter:
+    for metric, cond in attr_filter.items():
         if metric == "depth":
             if isinstance(cond, str) and cond.lower().startswith(compops):
                 pandas_exprs.append(
@@ -28,11 +28,12 @@ def _process_predicate(attr_filter):
                 pandas_exprs.append(
                     "df.index.get_level_values(0).apply(lambda n: n._depth == {})".format(cond)
                 )
-            raise InvalidQueryFilter(
-                "Attribute {} has a numeric type. Valid filters for this attribute are a string starting with a comparison operator or a real number.".format(
-                    metric
+            else:
+                raise InvalidQueryFilter(
+                    "Attribute {} has a numeric type. Valid filters for this attribute are a string starting with a comparison operator or a real number.".format(
+                        metric
+                    )
                 )
-            )
         if metric == "node_id":
             if isinstance(cond, str) and cond.lower().startswith(compops):
                 pandas_exprs.append(
@@ -42,44 +43,48 @@ def _process_predicate(attr_filter):
                 pandas_exprs.append(
                     "df.get_level_values(0).apply(lambda n: n._hatchet_nid == {})".format(cond)
                 )
-            raise InvalidQueryFilter(
-                "Attribute {} has a numeric type. Valid filters for this attribute are a string starting with a comparison operator or a real number.".format(
-                    metric
-                )
-            )
-    
-    def apply_predicate(df):
-
-        for metric, cond in attr_filter:
-            if metric not in df.columns:
-                return False
-            if is_string_dtype(df[metric]):
-                pandas_exprs.append(
-                    "df[{}].str.match(r\"{}\\Z\")".format(metric, cond)
-                )
-            if is_numeric_dtype(df[metric]):
-                if isinstance(cond, str) and cond.lower().startswith(compops):
-                    pandas_exprs.append(
-                        "(df[{}] {})".format(metric, cond)
-                    )
-                elif isinstance(cond, Real):
-                    pandas_exprs.append(
-                        "(df[{}] == {})".format(metric, cond)
-                    )
+            else:
                 raise InvalidQueryFilter(
                     "Attribute {} has a numeric type. Valid filters for this attribute are a string starting with a comparison operator or a real number.".format(
                         metric
                     )
                 )
-            raise InvalidQueryFilter(
-                "Filter must be one of the following:\n  * A regex string for a String attribute\n  * A string starting with a comparison operator for a Numeric attribute\n  * A number for a Numeric attribute\n"
-            )
+    
+    def apply_predicate(df):
+
+        for metric, cond in attr_filter.items():
+            if metric not in df.columns:
+                return False
+            if is_string_dtype(df[metric]):
+                pandas_exprs.append(
+                    "df[\"{}\"].str.match(r\"{}\\Z\")".format(metric, cond)
+                )
+            if is_numeric_dtype(df[metric]):
+                if isinstance(cond, str) and cond.lower().startswith(compops):
+                    pandas_exprs.append(
+                        "(df[\"{}\"] {})".format(metric, cond)
+                    )
+                elif isinstance(cond, Real):
+                    pandas_exprs.append(
+                        "(df[\"{}\"] == {})".format(metric, cond)
+                    )
+                else:
+                    raise InvalidQueryFilter(
+                        "Attribute {} has a numeric type. Valid filters for this attribute are a string starting with a comparison operator or a real number.".format(
+                            metric
+                        )
+                    )
+            else:
+                raise InvalidQueryFilter(
+                    "Filter must be one of the following:\n  * A regex string for a String attribute\n  * A string starting with a comparison operator for a Numeric attribute\n  * A number for a Numeric attribute\n"
+                )
         
         if len(pandas_exprs) == 0:
             raise InvalidQueryFilter(
                 "Constructed predicate contains 0 sub-expressions"
             )
         full_pd_expr = " & ".join(pandas_exprs)
+        # print(full_pd_expr)
         return eval(full_pd_expr)
 
     return apply_predicate if attr_filter != {} else lambda row: True

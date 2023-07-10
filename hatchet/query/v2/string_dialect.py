@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+import re
 import sys
 import pandas as pd  # noqa: F401
 from pandas.api.types import is_numeric_dtype, is_string_dtype  # noqa: F401
@@ -130,12 +131,14 @@ class StringQuery(Query):
                     return False
                 return eval(" ".join(pred_expr))
             
+            return _predicate
+            
         for quantifier, id in self.quantifiers:
             if id is None:
                 self._add_node(
                     quantifer=quantifier,
                     predicate=_predicate_builder({}, [
-                        "pd.Series([True]", "*", "len(df),", "dtype=bool)"
+                        "pd.Series([True]", "*", "len(df),", "dtype=bool,", "index=df.index)"
                     ])
                 )
             else:
@@ -149,12 +152,14 @@ class StringQuery(Query):
     def _parse_match(self, match_expr):
         nodes = match_expr.path.nodes
         for n in nodes:
-            new_node = (n.quant, n.name)
+            new_node = [n.quant, n.name]
             if (n.quant is None
-                    or n.quant.quantifer == ""
-                    or n.quant.quantifer == 0):
+                    or n.quant.quantifier == ""
+                    or n.quant.quantifier == 0):
                 new_node[0] = "."
-            self.quantifiers.append(new_node)
+            else:
+                new_node[0] = n.quant.quantifier
+            self.quantifiers.append(tuple(new_node))
 
     def _parse_where(self, where_expr):
         predicates = where_expr.predicates
@@ -429,3 +434,160 @@ class StringQuery(Query):
             },
             parsed_pred
         )
+
+
+def parse_string_dialect(query_str):
+    """Parse all types of String-based queries, including multi-queries that leverage
+    the curly brace delimiters.
+
+    Arguments:
+        query_str (str): the String-based query to be parsed
+
+    Returns:
+        (Query or CompoundQuery): A Hatchet query object representing the String-based query
+    """
+    # TODO Check if there's a way to prevent curly braces in a string
+    #      from being captured
+
+    # Find the number of curly brace-delimited regions in the query
+    query_str = query_str.strip()
+    curly_brace_elems = re.findall(r"\{(.*?)\}", query_str)
+    num_curly_brace_elems = len(curly_brace_elems)
+    # If there are no curly brace-delimited regions, just pass the query
+    # off to the CypherQuery constructor
+    if num_curly_brace_elems == 0:
+        if sys.version_info[0] == 2:
+            query_str = query_str.decode("utf-8")
+        return StringQuery(query_str)
+    # Create an iterator over the curly brace-delimited regions
+    curly_brace_iter = re.finditer(r"\{(.*?)\}", query_str)
+    # Will store curly brace-delimited regions in the WHERE clause
+    condition_list = None
+    # Will store curly brace-delimited regions that contain entire
+    # mid-level queries (MATCH clause and WHERE clause)
+    query_list = None
+    # If entire queries are in brace-delimited regions, store the indexes
+    # of the regions here so we don't consider brace-delimited regions
+    # within the already-captured region.
+    query_idxes = None
+    # Store which compound queries to apply to the curly brace-delimited regions
+    compound_ops = []
+    for i, match in enumerate(curly_brace_iter):
+        # Get the substring within curly braces
+        substr = query_str[match.start() + 1 : match.end() - 1]
+        substr = substr.strip()
+        # If an entire query (MATCH + WHERE) is within curly braces,
+        # add the query to "query_list", and add the indexes corresponding
+        # to the query to "query_idxes"
+        if substr.startswith("MATCH"):
+            if query_list is None:
+                query_list = []
+            if query_idxes is None:
+                query_idxes = []
+            query_list.append(substr)
+            query_idxes.append((match.start(), match.end()))
+        # If the curly brace-delimited region contains only parts of a
+        # WHERE clause, first, check if the region is within another
+        # curly brace delimited region. If it is, do nothing (it will
+        # be handled later). Otherwise, add the region to "condition_list"
+        elif re.match(r"[a-zA-Z0-9_]+\..*", substr) is not None:
+            is_encapsulated_region = False
+            if query_idxes is not None:
+                for s, e in query_idxes:
+                    if match.start() >= s or match.end() <= e:
+                        is_encapsulated_region = True
+                        break
+            if is_encapsulated_region:
+                continue
+            if condition_list is None:
+                condition_list = []
+            condition_list.append(substr)
+        # If the curly brace-delimited region is neither a whole query
+        # or part of a WHERE clause, raise an error
+        else:
+            raise ValueError("Invalid grouping (with curly braces) within the query")
+        # If there is a compound operator directly after the curly brace-delimited region,
+        # capture the type of operator, and store the type in "compound_ops"
+        if i + 1 < num_curly_brace_elems:
+            rest_substr = query_str[match.end() :]
+            rest_substr = rest_substr.strip()
+            if rest_substr.startswith("AND"):
+                compound_ops.append("AND")
+            elif rest_substr.startswith("OR"):
+                compound_ops.append("OR")
+            elif rest_substr.startswith("XOR"):
+                compound_ops.append("XOR")
+            else:
+                raise ValueError("Invalid compound operator type found!")
+    # Each call to this function should only consider one of the full query or
+    # WHERE clause versions at a time. If both types were captured, raise an error
+    # because some type of internal logic issue occured.
+    if condition_list is not None and query_list is not None:
+        raise ValueError(
+            "Curly braces must be around either a full mid-level query or a set of conditions in a single mid-level query"
+        )
+    # This branch is for the WHERE clause version
+    if condition_list is not None:
+        # Make sure you correctly gathered curly brace-delimited regions and
+        # compound operators
+        if len(condition_list) != len(compound_ops) + 1:
+            raise ValueError(
+                "Incompatible number of curly brace elements and compound operators"
+            )
+        # Get the MATCH clause that will be shared across the subqueries
+        match_comp_obj = re.search(r"MATCH\s+(?P<match_field>.*)\s+WHERE", query_str)
+        match_comp = match_comp_obj.group("match_field")
+        # Iterate over the compound operators
+        full_query = None
+        for i, op in enumerate(compound_ops):
+            # If in the first iteration, set the initial query as a CypherQuery where
+            # the MATCH clause is the shared match clause and the WHERE clause is the
+            # first curly brace-delimited region
+            if i == 0:
+                query1 = "MATCH {} WHERE {}".format(match_comp, condition_list[i])
+                if sys.version_info[0] == 2:
+                    query1 = query1.decode("utf-8")
+                full_query = StringQuery(query1)
+            # Get the next query as a CypherQuery where
+            # the MATCH clause is the shared match clause and the WHERE clause is the
+            # next curly brace-delimited region
+            next_query = "MATCH {} WHERE {}".format(match_comp, condition_list[i + 1])
+            if sys.version_info[0] == 2:
+                next_query = next_query.decode("utf-8")
+            next_query = StringQuery(next_query)
+            # Add the next query to the full query using the compound operator
+            # currently being considered
+            if op == "AND":
+                full_query = full_query & next_query
+            elif op == "OR":
+                full_query = full_query | next_query
+            else:
+                full_query = full_query ^ next_query
+        return full_query
+    # This branch is for the full query version
+    else:
+        # Make sure you correctly gathered curly brace-delimited regions and
+        # compound operators
+        if len(query_list) != len(compound_ops) + 1:
+            raise ValueError(
+                "Incompatible number of curly brace elements and compound operators"
+            )
+        # Iterate over the compound operators
+        full_query = None
+        for i, op in enumerate(compound_ops):
+            # If in the first iteration, set the initial query as the result
+            # of recursively calling this function on the first curly brace-delimited region
+            if i == 0:
+                full_query = parse_string_dialect(query_list[i])
+            # Get the next query by recursively calling this function
+            # on the next curly brace-delimited region
+            next_query = parse_string_dialect(query_list[i + 1])
+            # Add the next query to the full query using the compound operator
+            # currently being considered
+            if op == "AND":
+                full_query = full_query & next_query
+            elif op == "OR":
+                full_query = full_query | next_query
+            else:
+                full_query = full_query ^ next_query
+        return full_query

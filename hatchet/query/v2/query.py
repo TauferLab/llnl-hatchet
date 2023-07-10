@@ -15,7 +15,7 @@ class Query(object):
         """Create new Query"""
         self.query_pattern = []
 
-    def match(self, quantifier=".", predicate=lambda df: pd.Series([True] * len(df.index), dtype=bool)):
+    def match(self, quantifier=".", predicate=lambda df: pd.Series([True] * len(df.index), dtype=bool, index=df.index)):
         """Start a query with a root node described by the arguments.
 
         Arguments:
@@ -30,7 +30,7 @@ class Query(object):
         self._add_node(quantifier, predicate)
         return self
 
-    def rel(self, quantifier=".", predicate=lambda df: pd.Series([True] * len(df.index), dtype=bool)):
+    def rel(self, quantifier=".", predicate=lambda df: pd.Series([True] * len(df.index), dtype=bool, index=df.index)):
         """Add a new node to the end of the query.
 
         Arguments:
@@ -47,7 +47,7 @@ class Query(object):
         self._add_node(quantifier, predicate)
         return self
 
-    def relation(self, quantifer=".", predicate=lambda df: pd.Series([True] * len(df.index), dtype=bool)):
+    def relation(self, quantifer=".", predicate=lambda df: pd.Series([True] * len(df.index), dtype=bool, index=df.index)):
         """Alias to Query.rel. Add a new node to the end of the query.
 
         Arguments:
@@ -67,7 +67,7 @@ class Query(object):
         """Allows users to iterate over the Query like a list."""
         return iter(self.query_pattern)
 
-    def _add_node(self, quantifer=".", predicate=lambda df: pd.Series([True] * len(df.index), dtype=bool)):
+    def _add_node(self, quantifer=".", predicate=lambda df: pd.Series([True] * len(df.index), dtype=bool, index=df.index)):
         """Add a node to the query.
 
         Arguments:
