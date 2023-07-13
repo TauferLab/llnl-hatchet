@@ -124,12 +124,11 @@ class StringQuery(Query):
         def _predicate_builder(type_checks, pred_expr):
 
             def _predicate(df):
-                full_check_bool = True
                 for check in type_checks.values():
-                    full_check_bool = full_check_bool and eval(check)
-                if not full_check_bool:
-                    return False
-                return eval(" ".join(pred_expr))
+                    if not eval(check):
+                        raise InvalidQueryFilter("Predicate treats metric as invalid type")
+                full_query = " ".join(pred_expr)
+                return eval(full_query)
             
             return _predicate
             
@@ -144,6 +143,8 @@ class StringQuery(Query):
             else:
                 checks = self.predicates[id]["metric_checks"]
                 pred = self.predicates[id]["pred"]
+                if len(pred) > 1 and pred[0] in ("&", "|"):
+                    pred = pred[1:]
                 self._add_node(
                     quantifer=quantifier,
                     predicate=_predicate_builder(checks, pred)
@@ -218,7 +219,7 @@ class StringQuery(Query):
     
     def _parse_not_pred(self, obj):
         parsed_subpred = self._parse_single_pred(obj.subpred)
-        parsed_subpred[2].insert(0, "~")
+        parsed_subpred[2][0] = "(~ {})".format(parsed_subpred[2][0])
         return parsed_subpred
 
     def _parse_binary_pred(self, obj):
@@ -249,15 +250,13 @@ class StringQuery(Query):
     
     def _parse_none_pred(self, obj, is_not):
         parsed_pred = []
-        if is_not:
-            parsed_pred.append("~")
         if obj.metric == "depth":
             parsed_pred.append(
-                "df.index.get_level_values(0).apply(lambda n: n._depth is None)"
+                "df.index.get_level_values(0).to_series().apply(lambda n: n._depth is None)"
             )
         elif obj.metric == "node_id":
             parsed_pred.append(
-                "df.index.get_level_values(0).apply(lambda n: n._hatchet_nid is None)"
+                "df.index.get_level_values(0).to_series().apply(lambda n: n._hatchet_nid is None)"
             )
         else:
             parsed_pred.append(
@@ -265,6 +264,8 @@ class StringQuery(Query):
                     obj.metric
                 )
             )
+        if is_not:
+            parsed_pred[0] = "(~ {})".format(parsed_pred[0])
         return (
             obj.name,
             {},
@@ -273,11 +274,11 @@ class StringQuery(Query):
 
     def _parse_leaf_pred(self, obj, is_not):
         parsed_pred = []
-        if is_not:
-            parsed_pred.append("~")
         parsed_pred.append(
-            "df.index.get_level_values(0).apply(lambda n: len(n.children) == 0)"
+            "df.index.get_level_values(0).to_series().apply(lambda n: len(n.children) == 0)"
         )
+        if is_not:
+            parsed_pred[0] = "(~ {})".format(parsed_pred[0])
         return (
             obj.name,
             {},
@@ -391,13 +392,43 @@ class StringQuery(Query):
         raise RuntimeError("Invalid numeric predicate detected")
             
     def _parse_num_ineq(self, obj, eq_op):
+        if obj.metric == "depth":
+            if eq_op == "==" and obj.val == -1:
+                return (
+                    obj.name,
+                    {},
+                    [
+                        "df.index.get_level_values(0).to_series().apply(lambda n: len(n.children) == 0)"
+                    ]
+                )
+            return (
+                obj.name,
+                {},
+                [
+                    "df.index.get_level_values(0).to_series().apply(lambda n: n._depth {} {}".format(
+                        eq_op,
+                        obj.val,
+                    )
+                ]
+            )
+        if obj.metric == "node_id":
+            return (
+                obj.name,
+                {},
+                [
+                    "df.index.get_level_values(0).to_series().apply(lambda n: n._hatchet_nid {} {}".format(
+                        eq_op,
+                        obj.val,
+                    )
+                ]
+            )
         return (
             obj.name,
             {
                 obj.metric: "is_numeric_dtype(df[\"{}\"])".format(obj.metric)
             },
             [
-                "df[\"{}\"] {} {}".format(
+                "(df[\"{}\"] {} {})".format(
                     obj.metric,
                     eq_op,
                     obj.val,
@@ -407,11 +438,11 @@ class StringQuery(Query):
     
     def _parse_num_nan(self, obj, is_not):
         parsed_pred = []
-        if is_not:
-            parsed_pred.append("~")
         parsed_pred.append(
             "np.isnan(df[\"{}\"])".format(obj.metric)
         )
+        if is_not:
+            parsed_pred[0] = "(~ {})".format(parsed_pred[0])
         return (
             obj.name,
             {
@@ -422,11 +453,11 @@ class StringQuery(Query):
     
     def _parse_num_inf(self, obj, is_not):
         parsed_pred = []
-        if is_not:
-            parsed_pred.append("~")
         parsed_pred.append(
             "np.isinf(df[\"{}\"])".format(obj.metric)
         )
+        if is_not:
+            parsed_pred[0] = "(~ {})".format(parsed_pred[0])
         return (
             obj.name,
             {

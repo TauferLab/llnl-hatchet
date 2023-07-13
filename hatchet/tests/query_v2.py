@@ -7,6 +7,8 @@ import pytest
 
 import re
 
+import inspect
+
 import numpy as np
 import pandas as pd
 
@@ -52,40 +54,40 @@ def test_construct_object_dialect():
     query4 = ObjectQuery(path4)
 
     assert query1.query_pattern[0][0] == "."
-    assert query1.query_pattern[0][1](mock_dframe) == pd.Series([True, False])
+    assert (query1.query_pattern[0][1](mock_dframe) == pd.Series([True, False])).all()
     assert query1.query_pattern[1][0] == "*"
-    assert query1.query_pattern[1][1](mock_dframe) == pd.Series([True, True])
+    assert (query1.query_pattern[1][1](mock_dframe) == pd.Series([True, True])).all()
     assert query1.query_pattern[2][0] == "."
-    assert query1.query_pattern[2][1](mock_dframe) == pd.Series([False, True])
+    assert (query1.query_pattern[2][1](mock_dframe) == pd.Series([False, True])).all()
 
     assert query2.query_pattern[0][0] == "."
-    assert query2.query_pattern[0][1](mock_dframe) == pd.Series([True, False])
+    assert (query2.query_pattern[0][1](mock_dframe) == pd.Series([True, False])).all()
     assert query2.query_pattern[1][0] == "."
-    assert query2.query_pattern[1][1](mock_dframe) == pd.Series([True, True])
+    assert (query2.query_pattern[1][1](mock_dframe) == pd.Series([True, True])).all()
     assert query2.query_pattern[2][0] == "."
-    assert query2.query_pattern[2][1](mock_dframe) == pd.Series([True, True])
+    assert (query2.query_pattern[2][1](mock_dframe) == pd.Series([True, True])).all()
     assert query2.query_pattern[3][0] == "."
-    assert query2.query_pattern[3][1](mock_dframe) == pd.Series([False, True])
+    assert (query2.query_pattern[3][1](mock_dframe) == pd.Series([False, True])).all()
 
     assert query3.query_pattern[0][0] == "."
-    assert query3.query_pattern[0][1](mock_dframe) == pd.Series([True, False])
+    assert (query3.query_pattern[0][1](mock_dframe) == pd.Series([True, False])).all()
     assert query3.query_pattern[1][0] == "."
-    assert query3.query_pattern[1][1](mock_dframe) == pd.Series([True, False])
+    assert (query3.query_pattern[1][1](mock_dframe) == pd.Series([True, False])).all()
     assert query3.query_pattern[2][0] == "*"
-    assert query3.query_pattern[2][1](mock_dframe) == pd.Series([True, False])
+    assert (query3.query_pattern[2][1](mock_dframe) == pd.Series([True, False])).all()
     assert query3.query_pattern[3][0] == "."
-    assert query3.query_pattern[3][1](mock_dframe) == pd.Series([False, True])
+    assert (query3.query_pattern[3][1](mock_dframe) == pd.Series([False, True])).all()
 
     assert query4.query_pattern[0][0] == "."
-    assert query4.query_pattern[0][1](mock_dframe) == pd.Series([True, False])
+    assert (query4.query_pattern[0][1](mock_dframe) == pd.Series([True, False])).all()
     assert query4.query_pattern[1][0] == "."
-    assert query4.query_pattern[1][1](mock_dframe) == pd.Series([True, False])
+    assert (query4.query_pattern[1][1](mock_dframe) == pd.Series([True, False])).all()
     assert query4.query_pattern[2][0] == "."
-    assert query4.query_pattern[2][1](mock_dframe) == pd.Series([True, False])
+    assert (query4.query_pattern[2][1](mock_dframe) == pd.Series([True, False])).all()
     assert query4.query_pattern[3][0] == "."
-    assert query4.query_pattern[3][1](mock_dframe) == pd.Series([True, False])
+    assert (query4.query_pattern[3][1](mock_dframe) == pd.Series([True, False])).all()
     assert query4.query_pattern[4][0] == "."
-    assert query4.query_pattern[4][1](mock_dframe) == pd.Series([False, True])
+    assert (query4.query_pattern[4][1](mock_dframe) == pd.Series([False, True])).all()
 
     invalid_path = [
         {"name": "MPI_[_a-zA-Z]*"},
@@ -101,10 +103,6 @@ def test_construct_object_dialect():
 
 
 def test_construct_base_query():
-    mock_node_mpi = {"name": "MPI_Bcast"}
-    mock_node_ibv = {"name": "ibv_reg_mr"}
-    mock_node_time_true = {"time (inc)": 0.1}
-    mock_node_time_false = {"time (inc)": 0.001}
     mock_dframe = pd.DataFrame({
         "name": ["MPI_Bcast", "ibv_reg_mr"],
         "time (inc)": [0.1, 0.001]
@@ -130,43 +128,43 @@ def test_construct_base_query():
 
     query.match(predicate=mpi_filter).rel("*").rel(predicate=ibv_filter)
     assert query.query_pattern[0][0] == "."
-    assert query.query_pattern[0][1](mock_dframe) == pd.Series([True, False])
+    assert (query.query_pattern[0][1](mock_dframe) == pd.Series([True, False])).all()
     assert query.query_pattern[1][0] == "*"
-    assert query.query_pattern[1][1](mock_dframe) == pd.Series([True, True])
+    assert (query.query_pattern[1][1](mock_dframe) == pd.Series([True, True])).all()
     assert query.query_pattern[2][0] == "."
-    assert query.query_pattern[2][1](mock_dframe) == pd.Series([False, True])
+    assert (query.query_pattern[2][1](mock_dframe) == pd.Series([False, True])).all()
 
     query.match(predicate=mpi_filter).rel(2).rel(predicate=ibv_filter)
     assert query.query_pattern[0][0] == "."
-    assert query.query_pattern[0][1](mock_dframe) == pd.Series([True, False])
+    assert (query.query_pattern[0][1](mock_dframe) == pd.Series([True, False])).all()
     assert query.query_pattern[1][0] == "."
-    assert query.query_pattern[1][1](mock_dframe) == pd.Series([True, True])
+    assert (query.query_pattern[1][1](mock_dframe) == pd.Series([True, True])).all()
     assert query.query_pattern[2][0] == "."
-    assert query.query_pattern[2][1](mock_dframe) == pd.Series([True, True])
+    assert (query.query_pattern[2][1](mock_dframe) == pd.Series([True, True])).all()
     assert query.query_pattern[3][0] == "."
-    assert query.query_pattern[3][1](mock_dframe) == pd.Series([False, True])
+    assert (query.query_pattern[3][1](mock_dframe) == pd.Series([False, True])).all()
 
     query.match(predicate=mpi_filter).rel("+", time_ge_filter).rel(predicate=ibv_filter)
     assert query.query_pattern[0][0] == "."
-    assert query.query_pattern[0][1](mock_dframe) == pd.Series([True, False])
+    assert (query.query_pattern[0][1](mock_dframe) == pd.Series([True, False])).all()
     assert query.query_pattern[1][0] == "."
-    assert query.query_pattern[1][1](mock_dframe) == pd.Series([True, False])
+    assert (query.query_pattern[1][1](mock_dframe) == pd.Series([True, False])).all()
     assert query.query_pattern[2][0] == "*"
-    assert query.query_pattern[2][1](mock_dframe) == pd.Series([True, False])
+    assert (query.query_pattern[2][1](mock_dframe) == pd.Series([True, False])).all()
     assert query.query_pattern[3][0] == "."
-    assert query.query_pattern[3][1](mock_dframe) == pd.Series([False, True])
+    assert (query.query_pattern[3][1](mock_dframe) == pd.Series([False, True])).all()
 
     query.match(predicate=mpi_filter).rel(3, time_eq_filter).rel(predicate=ibv_filter)
     assert query.query_pattern[0][0] == "."
-    assert query.query_pattern[0][1](mock_dframe) == pd.Series([True, False])
+    assert (query.query_pattern[0][1](mock_dframe) == pd.Series([True, False])).all()
     assert query.query_pattern[1][0] == "."
-    assert query.query_pattern[1][1](mock_dframe) == pd.Series([True, False])
+    assert (query.query_pattern[1][1](mock_dframe) == pd.Series([True, False])).all()
     assert query.query_pattern[2][0] == "."
-    assert query.query_pattern[2][1](mock_dframe) == pd.Series([True, False])
+    assert (query.query_pattern[2][1](mock_dframe) == pd.Series([True, False])).all()
     assert query.query_pattern[3][0] == "."
-    assert query.query_pattern[3][1](mock_dframe) == pd.Series([True, False])
+    assert (query.query_pattern[3][1](mock_dframe) == pd.Series([True, False])).all()
     assert query.query_pattern[4][0] == "."
-    assert query.query_pattern[4][1](mock_dframe) == pd.Series([False, True])
+    assert (query.query_pattern[4][1](mock_dframe) == pd.Series([False, True])).all()
 
     with pytest.raises(InvalidQueryPath):
         _ = Query().rel(".", lambda row: True)
@@ -198,12 +196,17 @@ def test_find_matches_0_or_more(mock_graph_literal):
     none_node = gf.graph.roots[0].children[2].children[0].children[1].children[0]
 
     correct_paths = [
-        [
+        (
             node.children[0],
             node.children[0].children[0],
             node.children[0].children[0].children[0],
-        ],
-        [node.children[0], node.children[0].children[0]],
+            node.children[0].children[0].children[0].children[1],
+        ),
+        (
+            node.children[0],
+            node.children[0].children[0],
+            node.children[0].children[0].children[1],
+        ),
     ]
 
     query = ObjectQuery(path)
@@ -230,10 +233,10 @@ def test_find_matches_1(mock_graph_literal):
     engine = QueryEngine()
     engine._init(query, gf.dataframe, "off")
 
-    assert engine._find_matches_from_node(gf.graph.roots[0].children[0], query, 2) == [
-        [gf.graph.roots[0].children[0].children[1]]
+    assert engine._find_matches_from_node(gf.graph.roots[0].children[0].children[1], query, 2) == [
+        (gf.graph.roots[0].children[0].children[1],)
     ]
-    assert engine._match_1(gf.graph.roots[0], query, 2) is None
+    assert engine._find_matches_from_node(gf.graph.roots[0].children[0], query, 2) is None
 
 
 def test_match(mock_graph_literal):
@@ -248,13 +251,13 @@ def test_match(mock_graph_literal):
         {"time (inc)": 5.0, "time": 5.0},
     ]
     match0 = [
-        [
+        (
             root,
             root.children[0],
             root.children[0].children[1],
             root.children[0].children[1].children[0],
             root.children[0].children[1].children[0].children[0],
-        ]
+        )
     ]
     query0 = ObjectQuery(path0)
     engine = QueryEngine()
@@ -341,15 +344,15 @@ def test_apply(mock_graph_literal):
     path = [{"name": 5}, "*", {"name": "whatever"}]
     query = ObjectQuery(path)
     engine._reset()
-    engine._init(query, gf.dataframe, "off")
     with pytest.raises(InvalidQueryFilter):
+        engine._init(query, gf.dataframe, "off")
         engine.apply(query, gf.graph, gf.dataframe)
 
     path = [{"time": "badstring"}, "*", {"name": "whatever"}]
     query = ObjectQuery(path)
     engine._reset()
-    engine._init(query, gf.dataframe, "off")
     with pytest.raises(InvalidQueryFilter):
+        engine._init(query, gf.dataframe, "off")
         engine.apply(query, gf.graph, gf.dataframe)
 
     class DummyType:
@@ -366,8 +369,8 @@ def test_apply(mock_graph_literal):
     path = [{"name": "foo"}, {"name": "bar"}, {"list": DummyType()}]
     query = ObjectQuery(path)
     engine._reset()
-    engine._init(query, gf.dataframe, "off")
     with pytest.raises(InvalidQueryFilter):
+        engine._init(query, gf.dataframe, "off")
         engine.apply(query, gf.graph, gf.dataframe)
 
     path = ["*", {"name": "bar"}, {"name": "grault"}, "*"]
@@ -854,40 +857,40 @@ def test_construct_string_dialect():
     query4 = StringQuery(path4)
 
     assert query1.query_pattern[0][0] == "."
-    assert query1.query_pattern[0][1](mock_dframe) == pd.Series([True, False])
+    assert (query1.query_pattern[0][1](mock_dframe) == pd.Series([True, False])).all()
     assert query1.query_pattern[1][0] == "*"
-    assert query1.query_pattern[1][1](mock_dframe) == pd.Series([True, True])
+    assert (query1.query_pattern[1][1](mock_dframe) == pd.Series([True, True])).all()
     assert query1.query_pattern[2][0] == "."
-    assert query1.query_pattern[2][1](mock_dframe) == pd.Series([False, True])
+    assert (query1.query_pattern[2][1](mock_dframe) == pd.Series([False, True])).all()
 
     assert query2.query_pattern[0][0] == "."
-    assert query2.query_pattern[0][1](mock_dframe) == pd.Series([True, False])
+    assert (query2.query_pattern[0][1](mock_dframe) == pd.Series([True, False])).all()
     assert query2.query_pattern[1][0] == "."
-    assert query2.query_pattern[1][1](mock_dframe) == pd.Series([True, True])
+    assert (query2.query_pattern[1][1](mock_dframe) == pd.Series([True, True])).all()
     assert query2.query_pattern[2][0] == "."
-    assert query2.query_pattern[2][1](mock_dframe) == pd.Series([True, True])
+    assert (query2.query_pattern[2][1](mock_dframe) == pd.Series([True, True])).all()
     assert query2.query_pattern[3][0] == "."
-    assert query2.query_pattern[3][1](mock_dframe) == pd.Series([False, True])
+    assert (query2.query_pattern[3][1](mock_dframe) == pd.Series([False, True])).all()
 
     assert query3.query_pattern[0][0] == "."
-    assert query3.query_pattern[0][1](mock_dframe) == pd.Series([True, False])
+    assert (query3.query_pattern[0][1](mock_dframe) == pd.Series([True, False])).all()
     assert query3.query_pattern[1][0] == "."
-    assert query3.query_pattern[1][1](mock_dframe) == pd.Series([True, False])
+    assert (query3.query_pattern[1][1](mock_dframe) == pd.Series([True, False])).all()
     assert query3.query_pattern[2][0] == "*"
-    assert query3.query_pattern[2][1](mock_dframe) == pd.Series([True, False])
+    assert (query3.query_pattern[2][1](mock_dframe) == pd.Series([True, False])).all()
     assert query3.query_pattern[3][0] == "."
-    assert query3.query_pattern[3][1](mock_dframe) == pd.Series([False, True])
+    assert (query3.query_pattern[3][1](mock_dframe) == pd.Series([False, True])).all()
 
     assert query4.query_pattern[0][0] == "."
-    assert query4.query_pattern[0][1](mock_dframe) == pd.Series([True, False])
+    assert (query4.query_pattern[0][1](mock_dframe) == pd.Series([True, False])).all()
     assert query4.query_pattern[1][0] == "."
-    assert query4.query_pattern[1][1](mock_dframe) == pd.Series([True, False])
+    assert (query4.query_pattern[1][1](mock_dframe) == pd.Series([True, False])).all()
     assert query4.query_pattern[2][0] == "."
-    assert query4.query_pattern[2][1](mock_dframe) == pd.Series([True, False])
+    assert (query4.query_pattern[2][1](mock_dframe) == pd.Series([True, False])).all()
     assert query4.query_pattern[3][0] == "."
-    assert query4.query_pattern[3][1](mock_dframe) == pd.Series([True, False])
+    assert (query4.query_pattern[3][1](mock_dframe) == pd.Series([True, False])).all()
     assert query4.query_pattern[4][0] == "."
-    assert query4.query_pattern[4][1](mock_dframe) == pd.Series([False, True])
+    assert (query4.query_pattern[4][1](mock_dframe) == pd.Series([False, True])).all()
 
     invalid_path = u"""MATCH (p)->({"bad": "wildcard"}, a)->(q)
     WHERE p."name" STARTS WITH "MPI" AND a."time (inc)" = 0.1 AND

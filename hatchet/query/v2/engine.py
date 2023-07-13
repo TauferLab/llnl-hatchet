@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+from collections.abc import Iterable
+
 import pandas as pd
 
 from hatchet.query.errors import MultiIndexModeMismatch
@@ -65,8 +67,10 @@ class QueryEngine:
         if multi_index_mode not in self._available_modes:
             raise ValueError("Invalid multi-index mode")
         predicate_outputs = []
-        for _, pred in query.query_pattern:
-            predicate_outputs.append(pred(dframe))
+        for i, n in enumerate(query.query_pattern):
+            pred = n[1]
+            pred_out = pred(dframe)
+            predicate_outputs.append(pred_out)
         predicate_vals = pd.concat(
             {i: po for i, po in enumerate(predicate_outputs)},
             axis=1
@@ -117,7 +121,9 @@ class QueryEngine:
             if query_idx == len(query) - 1:
                 self.path_cache[(curr_node, query_idx)] = [(curr_node)]
                 return [(curr_node,)]
-            if query_idx == len(query) - 2 and query.query_pattern[query_idx + 1][0] == "*":
+            if (query_idx == len(query) - 2
+                    and query.query_pattern[query_idx + 1][0] == "*"
+                    and len(curr_node.children) == 0):
                 self.path_cache[(curr_node, query_idx)] = [(curr_node)]
                 return [(curr_node,)]
             # Otherwise, set next_query_idx to point to the next
@@ -170,7 +176,10 @@ class QueryEngine:
             # Cast the sub-matches to tuples so that they can be added to
             # the set
             for p in subpaths:
-                child_paths.add(tuple(p))
+                if isinstance(p, Iterable):
+                    child_paths.add(tuple(p))
+                else:
+                    child_paths.add(tuple([p]))
         # If we ended up with no valid sub-matches,
         # the current path is invalid, so we return None
         if len(child_paths) == 0:
