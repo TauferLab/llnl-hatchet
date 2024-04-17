@@ -327,7 +327,7 @@ class QueryMatcher(AbstractQuery):
         self.true_query.rel(wildcard_spec, filter_func)
         return self
 
-    def apply(self, gf):
+    def apply(self, gf, stats=False):
         """Apply the query to a GraphFrame.
 
         Arguments:
@@ -336,6 +336,11 @@ class QueryMatcher(AbstractQuery):
         Returns:
             (list): A list representing the set of nodes from paths that match this query
         """
+        if stats:
+            return COMPATABILITY_ENGINE.apply(
+                self.true_query, gf.graph, gf.statsframe.dataframe
+            )
+
         return COMPATABILITY_ENGINE.apply(self.true_query, gf.graph, gf.dataframe)
 
     def _get_new_query(self):
