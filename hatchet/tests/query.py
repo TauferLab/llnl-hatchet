@@ -382,9 +382,9 @@ def test_apply(mock_graph_literal):
             self.z = "hello"
 
     bad_field_test_dict = list(mock_graph_literal)
-    bad_field_test_dict[0]["children"][0]["children"][0]["metrics"][
-        "list"
-    ] = DummyType()
+    bad_field_test_dict[0]["children"][0]["children"][0]["metrics"]["list"] = (
+        DummyType()
+    )
     gf = GraphFrame.from_literal(bad_field_test_dict)
     path = [{"name": "foo"}, {"name": "bar"}, {"list": DummyType()}]
     query = ObjectQuery(path)
@@ -821,16 +821,16 @@ def test_construct_string_dialect():
     mock_node_ibv = {"name": "ibv_reg_mr"}
     mock_node_time_true = {"time (inc)": 0.1}
     mock_node_time_false = {"time (inc)": 0.001}
-    path1 = u"""MATCH (p)->("*")->(q)
+    path1 = """MATCH (p)->("*")->(q)
     WHERE p."name" STARTS WITH "MPI_" AND q."name" STARTS WITH "ibv"
     """
-    path2 = u"""MATCH (p)->(2)->(q)
+    path2 = """MATCH (p)->(2)->(q)
     WHERE p."name" STARTS WITH "MPI_" AND q."name" STARTS WITH "ibv"
     """
-    path3 = u"""MATCH (p)->("+", a)->(q)
+    path3 = """MATCH (p)->("+", a)->(q)
     WHERE p."name" STARTS WITH "MPI" AND a."time (inc)" >= 0.1 AND q."name" STARTS WITH "ibv"
     """
-    path4 = u"""MATCH (p)->(3, a)->(q)
+    path4 = """MATCH (p)->(3, a)->(q)
     WHERE p."name" STARTS WITH "MPI" AND a."time (inc)" = 0.1 AND q."name" STARTS WITH "ibv"
     """
     query1 = StringQuery(path1)
@@ -893,7 +893,7 @@ def test_construct_string_dialect():
     assert not query4.query_pattern[3][1](mock_node_time_false)
     assert query4.query_pattern[4][0] == "."
 
-    invalid_path = u"""MATCH (p)->({"bad": "wildcard"}, a)->(q)
+    invalid_path = """MATCH (p)->({"bad": "wildcard"}, a)->(q)
     WHERE p."name" STARTS WITH "MPI" AND a."time (inc)" = 0.1 AND
     q."name" STARTS WITH "ibv"
     """
@@ -903,7 +903,7 @@ def test_construct_string_dialect():
 
 def test_apply_string_dialect(mock_graph_literal):
     gf = GraphFrame.from_literal(mock_graph_literal)
-    path = u"""MATCH (p)->(2, q)->("*", r)->(s)
+    path = """MATCH (p)->(2, q)->("*", r)->(s)
     WHERE p."time (inc)" >= 30.0 AND NOT q."name" STARTS WITH "b"
     AND r."name" =~ "[^b][a-z]+" AND s."name" STARTS WITH "gr"
     """
@@ -920,7 +920,7 @@ def test_apply_string_dialect(mock_graph_literal):
 
     assert sorted(engine.apply(query, gf.graph, gf.dataframe)) == sorted(match)
 
-    path = u"""MATCH (p)->(".")->(q)->("*")
+    path = """MATCH (p)->(".")->(q)->("*")
     WHERE p."time (inc)" >= 30.0 AND q."name" = "bar"
     """
     match = [
@@ -933,14 +933,14 @@ def test_apply_string_dialect(mock_graph_literal):
     query = StringQuery(path)
     assert sorted(engine.apply(query, gf.graph, gf.dataframe)) == sorted(match)
 
-    path = u"""MATCH (p)->(q)->(r)
+    path = """MATCH (p)->(q)->(r)
     WHERE p."name" = "foo" AND q."name" = "bar" AND r."time" = 5.0
     """
     match = [root, root.children[0], root.children[0].children[0]]
     query = StringQuery(path)
     assert sorted(engine.apply(query, gf.graph, gf.dataframe)) == sorted(match)
 
-    path = u"""MATCH (p)->(q)->("+", r)
+    path = """MATCH (p)->(q)->("+", r)
     WHERE p."name" = "foo" AND q."name" = "qux" AND r."time (inc)" > 15.0
     """
     match = [
@@ -953,7 +953,7 @@ def test_apply_string_dialect(mock_graph_literal):
     query = StringQuery(path)
     assert sorted(engine.apply(query, gf.graph, gf.dataframe)) == sorted(match)
 
-    path = u"""MATCH (p)->(q)
+    path = """MATCH (p)->(q)
     WHERE p."time (inc)" > 100 OR p."time (inc)" <= 30 AND q."time (inc)" = 20
     """
     roots = gf.graph.roots
@@ -966,21 +966,21 @@ def test_apply_string_dialect(mock_graph_literal):
     query = StringQuery(path)
     assert sorted(engine.apply(query, gf.graph, gf.dataframe)) == sorted(match)
 
-    path = u"""MATCH (p)->("*", q)->(r)
+    path = """MATCH (p)->("*", q)->(r)
     WHERE p."name" = "this" AND q."name" = "is" AND r."name" = "nonsense"
     """
 
     query = StringQuery(path)
     assert engine.apply(query, gf.graph, gf.dataframe) == []
 
-    path = u"""MATCH (p)->("*")->(q)
+    path = """MATCH (p)->("*")->(q)
     WHERE p."name" = 5 AND q."name" = "whatever"
     """
     with pytest.raises(InvalidQueryFilter):
         query = StringQuery(path)
         engine.apply(query, gf.graph, gf.dataframe)
 
-    path = u"""MATCH (p)->("*")->(q)
+    path = """MATCH (p)->("*")->(q)
     WHERE p."time" = "badstring" AND q."name" = "whatever"
     """
     query = StringQuery(path)
@@ -994,18 +994,18 @@ def test_apply_string_dialect(mock_graph_literal):
             self.z = "hello"
 
     bad_field_test_dict = list(mock_graph_literal)
-    bad_field_test_dict[0]["children"][0]["children"][0]["metrics"][
-        "list"
-    ] = DummyType()
+    bad_field_test_dict[0]["children"][0]["children"][0]["metrics"]["list"] = (
+        DummyType()
+    )
     gf = GraphFrame.from_literal(bad_field_test_dict)
-    path = u"""MATCH (p)->(q)->(r)
+    path = """MATCH (p)->(q)->(r)
     WHERE p."name" = "foo" AND q."name" = "bar" AND p."list" = DummyType()
     """
     with pytest.raises(InvalidQueryPath):
         query = StringQuery(path)
         engine.apply(query, gf.graph, gf.dataframe)
 
-    path = u"""MATCH ("*")->(p)->(q)->("*")
+    path = """MATCH ("*")->(p)->(q)->("*")
     WHERE p."name" = "bar" AND q."name" = "grault"
     """
     match = [
@@ -1052,7 +1052,7 @@ def test_apply_string_dialect(mock_graph_literal):
     query = StringQuery(path)
     assert sorted(engine.apply(query, gf.graph, gf.dataframe)) == sorted(match)
 
-    path = u"""MATCH ("*")->(p)->(q)->("+")
+    path = """MATCH ("*")->(p)->(q)->("+")
     WHERE p."name" = "bar" AND q."name" = "grault"
     """
     query = StringQuery(path)
@@ -1060,7 +1060,7 @@ def test_apply_string_dialect(mock_graph_literal):
 
     gf.dataframe["time"] = np.NaN
     gf.dataframe.at[gf.graph.roots[0], "time"] = 5.0
-    path = u"""MATCH ("*", p)
+    path = """MATCH ("*", p)
     WHERE p."time" IS NOT NAN"""
     match = [gf.graph.roots[0]]
     query = StringQuery(path)
@@ -1068,7 +1068,7 @@ def test_apply_string_dialect(mock_graph_literal):
 
     gf.dataframe["time"] = 5.0
     gf.dataframe.at[gf.graph.roots[0], "time"] = np.NaN
-    path = u"""MATCH ("*", p)
+    path = """MATCH ("*", p)
     WHERE p."time" IS NAN"""
     match = [gf.graph.roots[0]]
     query = StringQuery(path)
@@ -1076,7 +1076,7 @@ def test_apply_string_dialect(mock_graph_literal):
 
     gf.dataframe["time"] = np.Inf
     gf.dataframe.at[gf.graph.roots[0], "time"] = 5.0
-    path = u"""MATCH ("*", p)
+    path = """MATCH ("*", p)
     WHERE p."time" IS NOT INF"""
     match = [gf.graph.roots[0]]
     query = StringQuery(path)
@@ -1084,7 +1084,7 @@ def test_apply_string_dialect(mock_graph_literal):
 
     gf.dataframe["time"] = 5.0
     gf.dataframe.at[gf.graph.roots[0], "time"] = np.Inf
-    path = u"""MATCH ("*", p)
+    path = """MATCH ("*", p)
     WHERE p."time" IS INF"""
     match = [gf.graph.roots[0]]
     query = StringQuery(path)
@@ -1093,7 +1093,7 @@ def test_apply_string_dialect(mock_graph_literal):
     names = gf.dataframe["name"].copy()
     gf.dataframe["name"] = None
     gf.dataframe.at[gf.graph.roots[0], "name"] = names.iloc[0]
-    path = u"""MATCH ("*", p)
+    path = """MATCH ("*", p)
     WHERE p."name" IS NOT NONE"""
     match = [gf.graph.roots[0]]
     query = StringQuery(path)
@@ -1101,7 +1101,7 @@ def test_apply_string_dialect(mock_graph_literal):
 
     gf.dataframe["name"] = names
     gf.dataframe.at[gf.graph.roots[0], "name"] = None
-    path = u"""MATCH ("*", p)
+    path = """MATCH ("*", p)
     WHERE p."name" IS NONE"""
     match = [gf.graph.roots[0]]
     query = StringQuery(path)
@@ -1111,13 +1111,13 @@ def test_apply_string_dialect(mock_graph_literal):
 def test_string_conj_compound_query(mock_graph_literal):
     gf = GraphFrame.from_literal(mock_graph_literal)
     compound_query1 = parse_string_dialect(
-        u"""
+        """
         {MATCH ("*", p) WHERE p."time (inc)" >= 20 AND p."time (inc)" <= 60}
         AND {MATCH ("*", p) WHERE p."time (inc)" >= 60}
         """
     )
     compound_query2 = parse_string_dialect(
-        u"""
+        """
         MATCH ("*", p)
         WHERE {p."time (inc)" >= 20 AND p."time (inc)" <= 60} AND {p."time (inc)" >= 60}
         """
@@ -1139,13 +1139,13 @@ def test_string_conj_compound_query(mock_graph_literal):
 def test_string_disj_compound_query(mock_graph_literal):
     gf = GraphFrame.from_literal(mock_graph_literal)
     compound_query1 = parse_string_dialect(
-        u"""
+        """
         {MATCH ("*", p) WHERE p."time (inc)" = 5.0}
         OR {MATCH ("*", p) WHERE p."time (inc)" = 10.0}
         """
     )
     compound_query2 = parse_string_dialect(
-        u"""
+        """
         MATCH ("*", p)
         WHERE {p."time (inc)" = 5.0} OR {p."time (inc)" = 10.0}
         """
@@ -1174,13 +1174,13 @@ def test_string_disj_compound_query(mock_graph_literal):
 def test_cypher_exc_disj_compound_query(mock_graph_literal):
     gf = GraphFrame.from_literal(mock_graph_literal)
     compound_query1 = parse_string_dialect(
-        u"""
+        """
         {MATCH ("*", p) WHERE p."time (inc)" >= 5.0 AND p."time (inc)" <= 10.0}
         XOR {MATCH ("*", p) WHERE p."time (inc)" = 10.0}
         """
     )
     compound_query2 = parse_string_dialect(
-        u"""
+        """
         MATCH ("*", p)
         WHERE {p."time (inc)" >= 5.0 AND p."time (inc)" <= 10.0} XOR {p."time (inc)" = 10.0}
         """
@@ -1215,19 +1215,19 @@ def test_leaf_query(small_mock2):
     nonleaves = list(nodes - set(matches))
     obj_query = ObjectQuery([{"depth": -1}])
     str_query_numeric = parse_string_dialect(
-        u"""
+        """
         MATCH (p)
         WHERE p."depth" = -1
         """
     )
     str_query_is_leaf = parse_string_dialect(
-        u"""
+        """
         MATCH (p)
         WHERE p IS LEAF
         """
     )
     str_query_is_not_leaf = parse_string_dialect(
-        u"""
+        """
         MATCH (p)
         WHERE p IS NOT LEAF
         """
@@ -1265,7 +1265,7 @@ def test_string_dialect_all_mode(tau_profile_dir):
     gf = GraphFrame.from_tau(tau_profile_dir)
     engine = QueryEngine()
     query = StringQuery(
-        u"""MATCH (".")->("+", p)
+        """MATCH (".")->("+", p)
         WHERE p."time (inc)" >= 17983.0
         """,
         multi_index_mode="all",
@@ -1296,7 +1296,7 @@ def test_string_dialect_any_mode(tau_profile_dir):
     gf = GraphFrame.from_tau(tau_profile_dir)
     engine = QueryEngine()
     query = StringQuery(
-        u"""MATCH (".", p)
+        """MATCH (".", p)
         WHERE p."time" < 24.0
         """,
         multi_index_mode="any",
@@ -1314,7 +1314,7 @@ def test_multi_index_mode_assertion_error(tau_profile_dir):
         _ = ObjectQuery([".", ("*", {"name": "test"})], multi_index_mode="foo")
     with pytest.raises(AssertionError):
         _ = StringQuery(
-            u""" MATCH (".")->("*", p)
+            """ MATCH (".")->("*", p)
             WHERE p."name" = "test"
             """,
             multi_index_mode="foo",
