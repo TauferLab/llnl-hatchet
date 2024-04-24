@@ -401,9 +401,9 @@ def test_apply(mock_graph_literal):
             self.z = "hello"
 
     bad_field_test_dict = list(mock_graph_literal)
-    bad_field_test_dict[0]["children"][0]["children"][0]["metrics"][
-        "list"
-    ] = DummyType()
+    bad_field_test_dict[0]["children"][0]["children"][0]["metrics"]["list"] = (
+        DummyType()
+    )
     gf = GraphFrame.from_literal(bad_field_test_dict)
     path = [{"name": "foo"}, {"name": "bar"}, {"list": DummyType()}]
     query = ObjectQuery(path)
@@ -852,10 +852,14 @@ def test_construct_string_dialect():
     path4 = """MATCH (p)->(3, a)->(q)
     WHERE p."name" STARTS WITH "MPI" AND a."time (inc)" = 0.1 AND q."name" STARTS WITH "ibv"
     """
+    path5 = """MATCH (p)->("*")->(q)
+    WHERE p.("name") STARTS WITH "MPI_" AND q.("name") STARTS WITH "ibv"
+    """
     query1 = StringQuery(path1)
     query2 = StringQuery(path2)
     query3 = StringQuery(path3)
     query4 = StringQuery(path4)
+    query5 = StringQuery(path5)
 
     assert query1.query_pattern[0][0] == "."
     assert query1.query_pattern[0][1](mock_node_mpi)
@@ -911,6 +915,17 @@ def test_construct_string_dialect():
     assert query4.query_pattern[3][1](mock_node_time_true)
     assert not query4.query_pattern[3][1](mock_node_time_false)
     assert query4.query_pattern[4][0] == "."
+
+    assert query5.query_pattern[0][0] == "."
+    assert query5.query_pattern[0][1](mock_node_mpi)
+    assert not query5.query_pattern[0][1](mock_node_ibv)
+    assert not query5.query_pattern[0][1](mock_node_time_true)
+    assert query5.query_pattern[1][0] == "*"
+    assert query5.query_pattern[1][1](mock_node_mpi)
+    assert query5.query_pattern[1][1](mock_node_ibv)
+    assert query5.query_pattern[1][1](mock_node_time_true)
+    assert query5.query_pattern[1][1](mock_node_time_false)
+    assert query5.query_pattern[2][0] == "."
 
     invalid_path = """MATCH (p)->({"bad": "wildcard"}, a)->(q)
     WHERE p."name" STARTS WITH "MPI" AND a."time (inc)" = 0.1 AND
@@ -1013,9 +1028,9 @@ def test_apply_string_dialect(mock_graph_literal):
             self.z = "hello"
 
     bad_field_test_dict = list(mock_graph_literal)
-    bad_field_test_dict[0]["children"][0]["children"][0]["metrics"][
-        "list"
-    ] = DummyType()
+    bad_field_test_dict[0]["children"][0]["children"][0]["metrics"]["list"] = (
+        DummyType()
+    )
     gf = GraphFrame.from_literal(bad_field_test_dict)
     path = """MATCH (p)->(q)->(r)
     WHERE p."name" = "foo" AND q."name" = "bar" AND p."list" = DummyType()
