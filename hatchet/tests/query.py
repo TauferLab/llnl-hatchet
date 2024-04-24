@@ -8,7 +8,6 @@ import pytest
 import re
 
 import numpy as np
-import pandas as pd
 
 from hatchet import GraphFrame
 from hatchet.node import traversal_order
