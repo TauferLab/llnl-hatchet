@@ -52,7 +52,8 @@ NumNan: name=ID '.' prop=MetricId 'IS NAN';
 NumNotNan: name=ID '.' prop=MetricId 'IS NOT NAN';
 NumInf: name=ID '.' prop=MetricId 'IS INF';
 NumNotInf: name=ID '.' prop=MetricId 'IS NOT INF';
-MetricId: '(' ids+=STRING[','] ')' | ids=STRING;
+MetricId: '(' ids+=SingleMetricId[','] ')' | ids=SingleMetricId;
+SingleMetricId: INT | STRING;
 """
 
 # TextX metamodel for the String-based dialect
