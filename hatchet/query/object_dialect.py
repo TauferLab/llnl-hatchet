@@ -106,6 +106,9 @@ def _process_predicate(attr_filter, multi_index_mode):
 
         matches = True
         for k, v in attr_filter.items():
+            metric_name = k
+            if isinstance(k, (tuple, list)) and len(k) == 1:
+                metric_name = k[0]
             try:
                 _ = iter(v)
                 # Manually raise TypeError if v is a string so that
@@ -114,10 +117,12 @@ def _process_predicate(attr_filter, multi_index_mode):
                     raise TypeError
             # Runs if v is not iterable (e.g., list, tuple, etc.)
             except TypeError:
-                matches = matches and filter_single_series(df_row, k, v)
+                matches = matches and filter_single_series(df_row, metric_name, v)
             else:
                 for single_value in v:
-                    matches = matches and filter_single_series(df_row, k, single_value)
+                    matches = matches and filter_single_series(
+                        df_row, metric_name, single_value
+                    )
         return matches
 
     def filter_dframe(df_row):
@@ -186,16 +191,19 @@ def _process_predicate(attr_filter, multi_index_mode):
         matches = True
         node = df_row.name.to_frame().index[0][0]
         for k, v in attr_filter.items():
+            metric_name = k
+            if isinstance(k, (tuple, list)) and len(k) == 1:
+                metric_name = k[0]
             try:
                 _ = iter(v)
                 if isinstance(v, str):
                     raise TypeError
             except TypeError:
-                matches = matches and filter_single_dframe(node, df_row, k, v)
+                matches = matches and filter_single_dframe(node, df_row, metric_name, v)
             else:
                 for single_value in v:
                     matches = matches and filter_single_dframe(
-                        node, df_row, k, single_value
+                        node, df_row, metric_name, single_value
                     )
         return matches
 
@@ -208,7 +216,6 @@ def _process_predicate(attr_filter, multi_index_mode):
 
 
 class ObjectQuery(Query):
-
     """Class for representing and parsing queries using the Object-based dialect."""
 
     def __init__(self, query, multi_index_mode="off"):

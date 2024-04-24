@@ -8,6 +8,7 @@ import pytest
 import re
 
 import numpy as np
+import pandas as pd
 
 from hatchet import GraphFrame
 from hatchet.node import traversal_order
@@ -45,10 +46,18 @@ def test_construct_object_dialect():
         (3, {"time (inc)": 0.1}),
         {"name": "ibv[_a-zA-Z]*"},
     ]
+    # Note: the comma's in the keys are necessary. In Python, creating a tuple
+    #       from a single string results in a tuple containing every character of
+    #       the string as a separate element. In other words,
+    #       tuple("name") == ( "n", "a", "m", "e" ).
+    #       The comma tells Python to create a tuple with a single element. In other words,
+    #       ("name",) == tuple("name",) == ( "name" )
+    path5 = [{("name",): "MPI_[_a-zA-Z]*"}, "*", {("name",): "ibv[_a-zA-Z]*"}]
     query1 = ObjectQuery(path1)
     query2 = ObjectQuery(path2)
     query3 = ObjectQuery(path3)
     query4 = ObjectQuery(path4)
+    query5 = ObjectQuery(path5)
 
     assert query1.query_pattern[0][0] == "."
     assert query1.query_pattern[0][1](mock_node_mpi)
@@ -104,6 +113,17 @@ def test_construct_object_dialect():
     assert query4.query_pattern[3][1](mock_node_time_true)
     assert not query4.query_pattern[3][1](mock_node_time_false)
     assert query4.query_pattern[4][0] == "."
+
+    assert query5.query_pattern[0][0] == "."
+    assert query5.query_pattern[0][1](mock_node_mpi)
+    assert not query5.query_pattern[0][1](mock_node_ibv)
+    assert not query5.query_pattern[0][1](mock_node_time_true)
+    assert query5.query_pattern[1][0] == "*"
+    assert query5.query_pattern[1][1](mock_node_mpi)
+    assert query5.query_pattern[1][1](mock_node_ibv)
+    assert query5.query_pattern[1][1](mock_node_time_true)
+    assert query5.query_pattern[1][1](mock_node_time_false)
+    assert query5.query_pattern[2][0] == "."
 
     invalid_path = [
         {"name": "MPI_[_a-zA-Z]*"},
@@ -382,9 +402,9 @@ def test_apply(mock_graph_literal):
             self.z = "hello"
 
     bad_field_test_dict = list(mock_graph_literal)
-    bad_field_test_dict[0]["children"][0]["children"][0]["metrics"]["list"] = (
-        DummyType()
-    )
+    bad_field_test_dict[0]["children"][0]["children"][0]["metrics"][
+        "list"
+    ] = DummyType()
     gf = GraphFrame.from_literal(bad_field_test_dict)
     path = [{"name": "foo"}, {"name": "bar"}, {"list": DummyType()}]
     query = ObjectQuery(path)
@@ -994,9 +1014,9 @@ def test_apply_string_dialect(mock_graph_literal):
             self.z = "hello"
 
     bad_field_test_dict = list(mock_graph_literal)
-    bad_field_test_dict[0]["children"][0]["children"][0]["metrics"]["list"] = (
-        DummyType()
-    )
+    bad_field_test_dict[0]["children"][0]["children"][0]["metrics"][
+        "list"
+    ] = DummyType()
     gf = GraphFrame.from_literal(bad_field_test_dict)
     path = """MATCH (p)->(q)->(r)
     WHERE p."name" = "foo" AND q."name" = "bar" AND p."list" = DummyType()
