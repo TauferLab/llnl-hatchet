@@ -8,7 +8,7 @@ foreach mod_name : cython_module_names
         mod_name,
         mod_name + '.pyx',
         dependencies: py_dep,
-        subdir: 'hatchet/cython_modules/lib',
+        subdir: 'hatchet' / 'cython_modules' / 'libs',
         install: true
     )
 endforeach

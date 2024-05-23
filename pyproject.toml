@@ -4,7 +4,6 @@ build-backend = "mesonpy"
 
 [project]
 name = "llnl-hatchet"
-license = "MIT"
 description = "A Python library for analyzing hierarchical performance data"
 readme = "./README.md"
 dynamic = ["version"]
@@ -24,6 +23,9 @@ dependencies = [
   "multiprocess",
   "caliper-reader",
 ]
+
+[project.license]
+file = "LICENSE"
 
 [project.urls]
 source_code = "https://github.com/llnl/hatchet"
