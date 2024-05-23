@@ -4,4 +4,6 @@ project('llnl-hatchet', 'cython',
 )
 
 py = import('python').find_installation(pure: false)
-cython = find_program('cython')
+py_dep = py.dependency()
+
+subdir('hatchet')
