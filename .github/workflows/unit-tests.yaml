@@ -30,7 +30,7 @@ jobs:
     - name: Install Hatchet
       run: |
         python -m pip install --upgrade pip pytest
-        python -m pip install .[tables]
+        python -m pip install .[hdf_writer]
 
     - name: Update Black
       if: ${{ matrix.python-version == 3.9 }}
