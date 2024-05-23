@@ -1,3 +1,4 @@
+# Specify the pure Python files for this directory
 hatchet_query_python_sources = [
     '__init__.py',
     'compat.py',
@@ -9,6 +10,8 @@ hatchet_query_python_sources = [
     'string_dialect.py'
 ]
 
+# Install the specified pure Python files into
+# <INSTALL_PREFIX>/hatchet/query
 py.install_sources(
     hatchet_query_python_sources,
     pure: false,

@@ -1,3 +1,4 @@
+# Specify the pure Python files for this directory
 hatchet_readers_python_sources = [
     '__init__.py',
     'caliper_native_reader.py',
@@ -15,6 +16,8 @@ hatchet_readers_python_sources = [
     'timemory_reader.py'
 ]
 
+# Install the specified pure Python files into 
+# <INSTALL_PREFIX>/hatchet/readers
 py.install_sources(
     hatchet_readers_python_sources,
     pure: false,
