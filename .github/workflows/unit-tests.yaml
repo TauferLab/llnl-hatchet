@@ -30,7 +30,7 @@ jobs:
     - name: Install Hatchet
       run: |
         python -m pip install --upgrade pip pytest
-        python -m pip install -e .
+        python -m pip install .
 
     - name: Update Black
       if: ${{ matrix.python-version == 3.9 }}
@@ -86,7 +86,8 @@ jobs:
 
     - name: Test Caliper and Timemory Support with pytest
       run: |
-        PYTHONPATH=. $(which pytest) --cov=./ --cov-report=xml
+        # PYTHONPATH=. $(which pytest) --cov=./ --cov-report=xml
+        $(which pytest) --cov=./ --cov-report=xml
         
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
