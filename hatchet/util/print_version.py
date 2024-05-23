@@ -8,6 +8,6 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from version import __version__
+from version import __version__  # noqa: E402
 
 print(__version__)
