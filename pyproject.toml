@@ -1,33 +1,73 @@
 [build-system]
-requires = ["setuptools", "wheel", "Cython"]
-build-backend = "setuptools.build_meta"
+requires = ["meson-python", "meson[ninja]", "Cython"]
+build-backend = "mesonpy"
 
-[tool.poetry]
+[project]
 name = "llnl-hatchet"
-version = "2024.1.1"
-description = "A Python library for analyzing hierarchical performance data."
-authors = [
-    "Abhinav Bhatele <bhatele@cs.umd.edu>",
-    "Stephanie Brink <brink2@llnl.gov>",
-    "Todd Gamblin <tgamblin@llnl.gov>",
-]
 license = "MIT"
+description = "A Python library for analyzing hierarchical performance data"
+readme = "./README.md"
+dynamic = ["version"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "License :: OSI Approved :: MIT License",
+]
+requires-python = ">= 3.7"
+dependencies = [
+  "pydot",
+  "PyYAML",
+  "matplotlib",
+  "numpy",
+  "pandas",
+  "textX < 3.0.0; python_version < '3.6'",
+  "textX >= 3.0.0; python_version >= '3.6'",
+  "multiprocess",
+  "caliper-reader",
+]
+
+[project.urls]
+source_code = "https://github.com/llnl/hatchet"
+documentation = "https://llnl-hatchet.readthedocs.io/en/latest/"
+
+[[project.authors]]
+name = "Abhinav Bhatele"
+email = "bhatele@cs.umd.edu"
+
+[[project.authors]]
+name = "Stephanie Brink"
+email = "brink2@llnl.gov"
+
+[[project.authors]]
+name = "Todd Gamblin"
+email = "tgamblin@llnl.gov"
+
+[[project.maintainers]]
+name = "Olga Pearce"
+email = "pearce8@llnl.gov"
+
+[[project.maintainers]]
+name = "Ian Lumsden"
+email = "ilumsden@vols.utk.edu"
+
+[[project.maintainers]]
+name = "Connor Scully-Allison"
+email = "cscullyallison@sci.utah.edu"
 
 [tool.ruff]
 line-length = 88
 target-version = 'py37'
 include = ['\.pyi?$']
 exclude = [
-    ".eggs",
-    ".git",
-    ".hg",
-    ".mypy_cache",
-    ".tox",
-    ".venv",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
+  ".eggs",
+  ".git",
+  ".hg",
+  ".mypy_cache",
+  ".tox",
+  ".venv",
+  "_build",
+  "buck-out",
+  "build",
+  "dist",
 ]
 
 [tool.black]
