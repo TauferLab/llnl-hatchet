@@ -1,5 +1,5 @@
 hatchet/tests export-ignore
-screeshot.png export-ignore
+screenshot.png export-ignore
 pytest.ini export-ignore
 logo.png export-ignore
 logo-hex.png export-ignore
