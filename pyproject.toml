@@ -41,6 +41,11 @@ dependencies = [
 source_code = "https://github.com/llnl/hatchet"
 documentation = "https://llnl-hatchet.readthedocs.io/en/latest/"
 
+[project.optional-dependencies]
+hdf_writer = [
+  "tables"
+]
+
 [tool.ruff]
 line-length = 88
 target-version = 'py37'
