@@ -5,11 +5,24 @@ build-backend = "mesonpy"
 [project]
 name = "llnl-hatchet"
 description = "A Python library for analyzing hierarchical performance data"
-readme = "./README.md"
 dynamic = ["version"]
+readme = "./README.md"
+license = { file="LICENSE" }
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "License :: OSI Approved :: MIT License",
+]
+authors = [
+  { name = "Abhinav Bhatele", email = "bhatele@cs.umd.edu" },
+  { name = "Stephanie Brink", email = "brink2@llnl.gov" },
+  { name = "Todd Gamblin", email = "tgamblin@llnl.gov" }
+]
+maintainers = [
+  { name = "Olga Pearce", email = "pearce8@llnl.gov" },
+  { name = "Ian Lumsden", email = "ilumsden@vols.utk.edu" },
+  { name = "Connor Scully-Allison", email = "cscullyallison@sci.utah.edu" },
+  { name = "Dewi Yokelson", email = "dewiy@cs.uoregon.edu" },
+  { name = "Michael McKinsey", email = "michaelmckinsey@tamu.edu" }
 ]
 requires-python = ">= 3.7"
 dependencies = [
@@ -24,36 +37,9 @@ dependencies = [
   "caliper-reader",
 ]
 
-[project.license]
-file = "LICENSE"
-
 [project.urls]
 source_code = "https://github.com/llnl/hatchet"
 documentation = "https://llnl-hatchet.readthedocs.io/en/latest/"
-
-[[project.authors]]
-name = "Abhinav Bhatele"
-email = "bhatele@cs.umd.edu"
-
-[[project.authors]]
-name = "Stephanie Brink"
-email = "brink2@llnl.gov"
-
-[[project.authors]]
-name = "Todd Gamblin"
-email = "tgamblin@llnl.gov"
-
-[[project.maintainers]]
-name = "Olga Pearce"
-email = "pearce8@llnl.gov"
-
-[[project.maintainers]]
-name = "Ian Lumsden"
-email = "ilumsden@vols.utk.edu"
-
-[[project.maintainers]]
-name = "Connor Scully-Allison"
-email = "cscullyallison@sci.utah.edu"
 
 [tool.ruff]
 line-length = 88
