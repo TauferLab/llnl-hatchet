@@ -15,7 +15,7 @@ license = "MIT"
 
 [tool.ruff]
 line-length = 88
-target-version = 'py37'
+target-version = 'py39'
 include = ['\.pyi?$']
 exclude = [
     ".eggs",
@@ -32,7 +32,7 @@ exclude = [
 
 [tool.black]
 line-length = 88
-target-version = ['py27', 'py35', 'py36', 'py37', 'py38']
+target-version = ['py35', 'py36', 'py37', 'py38', 'py39', 'py310', 'py311']
 include = '\.pyi?$'
 exclude = '''
 /(
