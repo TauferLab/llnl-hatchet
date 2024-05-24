@@ -14,7 +14,6 @@ from .errors import BadNumberNaryQueryArgs
 
 
 class CompoundQuery(object):
-
     """Base class for all types of compound queries."""
 
     def __init__(self, *queries):
@@ -48,7 +47,6 @@ class CompoundQuery(object):
 
 
 class ConjunctionQuery(CompoundQuery):
-
     """A compound query that combines the results of its subqueries
     using set conjunction.
     """
@@ -83,7 +81,6 @@ class ConjunctionQuery(CompoundQuery):
 
 
 class DisjunctionQuery(CompoundQuery):
-
     """A compound query that combines the results of its subqueries
     using set disjunction.
     """
@@ -118,7 +115,6 @@ class DisjunctionQuery(CompoundQuery):
 
 
 class ExclusiveDisjunctionQuery(CompoundQuery):
-
     """A compound query that combines the results of its subqueries
     using exclusive set disjunction.
     """
@@ -153,7 +149,6 @@ class ExclusiveDisjunctionQuery(CompoundQuery):
 
 
 class NegationQuery(CompoundQuery):
-
     """A compound query that inverts/negates the result of
     its single subquery.
     """

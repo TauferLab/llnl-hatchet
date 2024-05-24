@@ -92,7 +92,8 @@ class CaliperNativeReader:
 
     def _reset_metrics(self, metrics):
         """Since the initial functions (i.e. main) are only called once, this keeps a small subset
-        of the timeseries data and resets the rest so future iterations will be filled with nans"""
+        of the timeseries data and resets the rest so future iterations will be filled with nans
+        """
         new_mets = []
         cols_to_keep = [
             "nid",
@@ -106,7 +107,6 @@ class CaliperNativeReader:
         return new_mets
 
     def read_metrics(self, ctx="path"):
-
         """append each metrics table to a list and return the list, split on timeseries_level if exists"""
         metric_dfs = []
         all_metrics = []

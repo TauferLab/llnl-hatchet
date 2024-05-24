@@ -8,7 +8,7 @@ from os import walk, path
 
 static_filepath = path.abspath("static/")
 
-for (pt, dirs, files) in walk(static_filepath):
+for pt, dirs, files in walk(static_filepath):
     for file in files:
         if ".html" in file:
             with open(path.join(static_filepath, file), "r") as f:

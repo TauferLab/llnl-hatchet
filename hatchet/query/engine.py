@@ -15,7 +15,6 @@ from .string_dialect import parse_string_dialect
 
 
 class QueryEngine:
-
     """Class for applying queries to GraphFrames."""
 
     def __init__(self):

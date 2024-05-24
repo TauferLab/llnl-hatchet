@@ -482,9 +482,11 @@ class StringQuery(Query):
             None,
             obj.name,
             'df_row[{}] == "{}"'.format(
-                str(tuple(obj.prop.ids))
-                if len(obj.prop.ids) > 1
-                else "'{}'".format(obj.prop.ids[0]),
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
                 obj.val,
             ),
             "isinstance(df_row[{}], str)".format(
@@ -500,9 +502,11 @@ class StringQuery(Query):
             obj.name,
             self._add_aggregation_call_to_multi_idx_predicate(
                 'df_row[{}].apply(lambda elem: elem == "{}")'.format(
-                    str(tuple(obj.prop.ids))
-                    if len(obj.prop.ids) > 1
-                    else "'{}'".format(obj.prop.ids[0]),
+                    (
+                        str(tuple(obj.prop.ids))
+                        if len(obj.prop.ids) > 1
+                        else "'{}'".format(obj.prop.ids[0])
+                    ),
                     obj.val,
                 )
             ),
@@ -519,9 +523,11 @@ class StringQuery(Query):
             None,
             obj.name,
             'df_row[{}].startswith("{}")'.format(
-                str(tuple(obj.prop.ids))
-                if len(obj.prop.ids) > 1
-                else "'{}'".format(obj.prop.ids[0]),
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
                 obj.val,
             ),
             "isinstance(df_row[{}], str)".format(
@@ -537,9 +543,11 @@ class StringQuery(Query):
             obj.name,
             self._add_aggregation_call_to_multi_idx_predicate(
                 'df_row[{}].apply(lambda elem: elem.startswith("{}"))'.format(
-                    str(tuple(obj.prop.ids))
-                    if len(obj.prop.ids) > 1
-                    else "'{}'".format(obj.prop.ids[0]),
+                    (
+                        str(tuple(obj.prop.ids))
+                        if len(obj.prop.ids) > 1
+                        else "'{}'".format(obj.prop.ids[0])
+                    ),
                     obj.val,
                 )
             ),
@@ -556,9 +564,11 @@ class StringQuery(Query):
             None,
             obj.name,
             'df_row[{}].endswith("{}")'.format(
-                str(tuple(obj.prop.ids))
-                if len(obj.prop.ids) > 1
-                else "'{}'".format(obj.prop.ids[0]),
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
                 obj.val,
             ),
             "isinstance(df_row[{}], str)".format(
@@ -574,9 +584,11 @@ class StringQuery(Query):
             obj.name,
             self._add_aggregation_call_to_multi_idx_predicate(
                 'df_row[{}].apply(lambda elem: elem.endswith("{}"))'.format(
-                    str(tuple(obj.prop.ids))
-                    if len(obj.prop.ids) > 1
-                    else "'{}'".format(obj.prop.ids[0]),
+                    (
+                        str(tuple(obj.prop.ids))
+                        if len(obj.prop.ids) > 1
+                        else "'{}'".format(obj.prop.ids[0])
+                    ),
                     obj.val,
                 )
             ),
@@ -594,9 +606,11 @@ class StringQuery(Query):
             obj.name,
             '"{}" in df_row[{}]'.format(
                 obj.val,
-                str(tuple(obj.prop.ids))
-                if len(obj.prop.ids) > 1
-                else "'{}'".format(obj.prop.ids[0]),
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
             ),
             "isinstance(df_row[{}], str)".format(
                 str(tuple(obj.prop.ids))
@@ -611,9 +625,11 @@ class StringQuery(Query):
             obj.name,
             self._add_aggregation_call_to_multi_idx_predicate(
                 'df_row[{}].apply(lambda elem: "{}" in elem)'.format(
-                    str(tuple(obj.prop.ids))
-                    if len(obj.prop.ids) > 1
-                    else "'{}'".format(obj.prop.ids[0]),
+                    (
+                        str(tuple(obj.prop.ids))
+                        if len(obj.prop.ids) > 1
+                        else "'{}'".format(obj.prop.ids[0])
+                    ),
                     obj.val,
                 )
             ),
@@ -631,9 +647,11 @@ class StringQuery(Query):
             obj.name,
             're.match("{}", df_row[{}]) is not None'.format(
                 obj.val,
-                str(tuple(obj.prop.ids))
-                if len(obj.prop.ids) > 1
-                else "'{}'".format(obj.prop.ids[0]),
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
             ),
             "isinstance(df_row[{}], str)".format(
                 str(tuple(obj.prop.ids))
@@ -648,9 +666,11 @@ class StringQuery(Query):
             obj.name,
             self._add_aggregation_call_to_multi_idx_predicate(
                 'df_row[{}].apply(lambda elem: re.match("{}", elem) is not None)'.format(
-                    str(tuple(obj.prop.ids))
-                    if len(obj.prop.ids) > 1
-                    else "'{}'".format(obj.prop.ids[0]),
+                    (
+                        str(tuple(obj.prop.ids))
+                        if len(obj.prop.ids) > 1
+                        else "'{}'".format(obj.prop.ids[0])
+                    ),
                     obj.val,
                 )
             ),
@@ -748,9 +768,11 @@ class StringQuery(Query):
             None,
             obj.name,
             "df_row[{}] == {}".format(
-                str(tuple(obj.prop.ids))
-                if len(obj.prop.ids) > 1
-                else "'{}'".format(obj.prop.ids[0]),
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
                 obj.val,
             ),
             "isinstance(df_row[{}], Real)".format(
@@ -825,9 +847,11 @@ class StringQuery(Query):
             obj.name,
             self._add_aggregation_call_to_multi_idx_predicate(
                 "df_row[{}].apply(lambda elem: elem == {})".format(
-                    str(tuple(obj.prop.ids))
-                    if len(obj.prop.ids) > 1
-                    else "'{}'".format(obj.prop.ids[0]),
+                    (
+                        str(tuple(obj.prop.ids))
+                        if len(obj.prop.ids) > 1
+                        else "'{}'".format(obj.prop.ids[0])
+                    ),
                     obj.val,
                 )
             ),
@@ -894,9 +918,11 @@ class StringQuery(Query):
             None,
             obj.name,
             "df_row[{}] < {}".format(
-                str(tuple(obj.prop.ids))
-                if len(obj.prop.ids) > 1
-                else "'{}'".format(obj.prop.ids[0]),
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
                 obj.val,
             ),
             "isinstance(df_row[{}], Real)".format(
@@ -964,9 +990,11 @@ class StringQuery(Query):
             obj.name,
             self._add_aggregation_call_to_multi_idx_predicate(
                 "df_row[{}].apply(lambda elem: elem < {})".format(
-                    str(tuple(obj.prop.ids))
-                    if len(obj.prop.ids) > 1
-                    else "'{}'".format(obj.prop.ids[0]),
+                    (
+                        str(tuple(obj.prop.ids))
+                        if len(obj.prop.ids) > 1
+                        else "'{}'".format(obj.prop.ids[0])
+                    ),
                     obj.val,
                 )
             ),
@@ -1033,9 +1061,11 @@ class StringQuery(Query):
             None,
             obj.name,
             "df_row[{}] > {}".format(
-                str(tuple(obj.prop.ids))
-                if len(obj.prop.ids) > 1
-                else "'{}'".format(obj.prop.ids[0]),
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
                 obj.val,
             ),
             "isinstance(df_row[{}], Real)".format(
@@ -1103,9 +1133,11 @@ class StringQuery(Query):
             obj.name,
             self._add_aggregation_call_to_multi_idx_predicate(
                 "df_row[{}].apply(lambda elem: elem > {})".format(
-                    str(tuple(obj.prop.ids))
-                    if len(obj.prop.ids) > 1
-                    else "'{}'".format(obj.prop.ids[0]),
+                    (
+                        str(tuple(obj.prop.ids))
+                        if len(obj.prop.ids) > 1
+                        else "'{}'".format(obj.prop.ids[0])
+                    ),
                     obj.val,
                 )
             ),
@@ -1172,9 +1204,11 @@ class StringQuery(Query):
             None,
             obj.name,
             "df_row[{}] <= {}".format(
-                str(tuple(obj.prop.ids))
-                if len(obj.prop.ids) > 1
-                else "'{}'".format(obj.prop.ids[0]),
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
                 obj.val,
             ),
             "isinstance(df_row[{}], Real)".format(
@@ -1242,9 +1276,11 @@ class StringQuery(Query):
             obj.name,
             self._add_aggregation_call_to_multi_idx_predicate(
                 "df_row[{}].apply(lambda elem: elem <= {})".format(
-                    str(tuple(obj.prop.ids))
-                    if len(obj.prop.ids) > 1
-                    else "'{}'".format(obj.prop.ids[0]),
+                    (
+                        str(tuple(obj.prop.ids))
+                        if len(obj.prop.ids) > 1
+                        else "'{}'".format(obj.prop.ids[0])
+                    ),
                     obj.val,
                 )
             ),
@@ -1311,9 +1347,11 @@ class StringQuery(Query):
             None,
             obj.name,
             "df_row[{}] >= {}".format(
-                str(tuple(obj.prop.ids))
-                if len(obj.prop.ids) > 1
-                else "'{}'".format(obj.prop.ids[0]),
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
                 obj.val,
             ),
             "isinstance(df_row[{}], Real)".format(
@@ -1381,9 +1419,11 @@ class StringQuery(Query):
             obj.name,
             self._add_aggregation_call_to_multi_idx_predicate(
                 "df_row[{}].apply(lambda elem: elem >= {})".format(
-                    str(tuple(obj.prop.ids))
-                    if len(obj.prop.ids) > 1
-                    else "'{}'".format(obj.prop.ids[0]),
+                    (
+                        str(tuple(obj.prop.ids))
+                        if len(obj.prop.ids) > 1
+                        else "'{}'".format(obj.prop.ids[0])
+                    ),
                     obj.val,
                 )
             ),
