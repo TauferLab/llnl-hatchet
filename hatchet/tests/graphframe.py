@@ -765,8 +765,8 @@ def test_sub_decorator(monkeypatch, small_mock1, small_mock2, small_mock3):
     output = gf4.tree(metric_column="time")
 
     assert "0.000 C" in output
-    assert u"nan D ▶" in output
-    assert u"10.000 H ◀" in output
+    assert "nan D ▶" in output
+    assert "10.000 H ◀" in output
 
     gf5 = gf1 - gf3
 
@@ -781,8 +781,8 @@ def test_sub_decorator(monkeypatch, small_mock1, small_mock2, small_mock3):
     output = gf5.tree(metric_column="time (inc)")
 
     assert "15.000 A" in output
-    assert u"5.000 C ◀" in output
-    assert u"10.000 H ◀" in output
+    assert "5.000 C ◀" in output
+    assert "10.000 H ◀" in output
 
 
 def test_div_decorator(monkeypatch, small_mock1, small_mock2):
@@ -804,8 +804,8 @@ def test_div_decorator(monkeypatch, small_mock1, small_mock2):
 
     assert "1.000 C" in output
     assert "inf B" in output
-    assert u"nan D ▶" in output
-    assert u"10.000 H ◀" in output
+    assert "nan D ▶" in output
+    assert "10.000 H ◀" in output
 
 
 def test_groupby_aggregate_simple(mock_dag_literal_module):

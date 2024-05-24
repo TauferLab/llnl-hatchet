@@ -346,7 +346,7 @@ def test_sym_diff_query(mock_graph_literal):
 
 def test_apply_cypher(mock_graph_literal):
     gf = GraphFrame.from_literal(mock_graph_literal)
-    path = u"""MATCH (p)->(2, q)->("*", r)->(s)
+    path = """MATCH (p)->(2, q)->("*", r)->(s)
     WHERE p."time (inc)" >= 30.0 AND NOT q."name" STARTS WITH "b"
     AND r."name" =~ "[^b][a-z]+" AND s."name" STARTS WITH "gr"
     """
@@ -362,7 +362,7 @@ def test_apply_cypher(mock_graph_literal):
 
     assert sorted(query.apply(gf)) == sorted(match)
 
-    path = u"""MATCH (p)->(".")->(q)->("*")
+    path = """MATCH (p)->(".")->(q)->("*")
     WHERE p."time (inc)" >= 30.0 AND q."name" = "bar"
     """
     match = [
@@ -375,14 +375,14 @@ def test_apply_cypher(mock_graph_literal):
     query = CypherQuery(path)
     assert sorted(query.apply(gf)) == sorted(match)
 
-    path = u"""MATCH (p)->(q)->(r)
+    path = """MATCH (p)->(q)->(r)
     WHERE p."name" = "foo" AND q."name" = "bar" AND r."time" = 5.0
     """
     match = [root, root.children[0], root.children[0].children[0]]
     query = CypherQuery(path)
     assert sorted(query.apply(gf)) == sorted(match)
 
-    path = u"""MATCH (p)->(q)->("+", r)
+    path = """MATCH (p)->(q)->("+", r)
     WHERE p."name" = "foo" AND q."name" = "qux" AND r."time (inc)" > 15.0
     """
     match = [
@@ -395,7 +395,7 @@ def test_apply_cypher(mock_graph_literal):
     query = CypherQuery(path)
     assert sorted(query.apply(gf)) == sorted(match)
 
-    path = u"""MATCH (p)->(q)
+    path = """MATCH (p)->(q)
     WHERE p."time (inc)" > 100 OR p."time (inc)" <= 30 AND q."time (inc)" = 20
     """
     roots = gf.graph.roots
@@ -408,21 +408,21 @@ def test_apply_cypher(mock_graph_literal):
     query = CypherQuery(path)
     assert sorted(query.apply(gf)) == sorted(match)
 
-    path = u"""MATCH (p)->("*", q)->(r)
+    path = """MATCH (p)->("*", q)->(r)
     WHERE p."name" = "this" AND q."name" = "is" AND r."name" = "nonsense"
     """
 
     query = CypherQuery(path)
     assert query.apply(gf) == []
 
-    path = u"""MATCH (p)->("*")->(q)
+    path = """MATCH (p)->("*")->(q)
     WHERE p."name" = 5 AND q."name" = "whatever"
     """
     with pytest.raises(InvalidQueryFilter):
         query = CypherQuery(path)
         query.apply(gf)
 
-    path = u"""MATCH (p)->("*")->(q)
+    path = """MATCH (p)->("*")->(q)
     WHERE p."time" = "badstring" AND q."name" = "whatever"
     """
     query = CypherQuery(path)
@@ -440,14 +440,14 @@ def test_apply_cypher(mock_graph_literal):
         "list"
     ] = DummyType()
     gf = GraphFrame.from_literal(bad_field_test_dict)
-    path = u"""MATCH (p)->(q)->(r)
+    path = """MATCH (p)->(q)->(r)
     WHERE p."name" = "foo" AND q."name" = "bar" AND p."list" = DummyType()
     """
     with pytest.raises(InvalidQueryPath):
         query = CypherQuery(path)
         query.apply(gf)
 
-    path = u"""MATCH ("*")->(p)->(q)->("*")
+    path = """MATCH ("*")->(p)->(q)->("*")
     WHERE p."name" = "bar" AND q."name" = "grault"
     """
     match = [
@@ -494,7 +494,7 @@ def test_apply_cypher(mock_graph_literal):
     query = CypherQuery(path)
     assert sorted(query.apply(gf)) == sorted(match)
 
-    path = u"""MATCH ("*")->(p)->(q)->("+")
+    path = """MATCH ("*")->(p)->(q)->("+")
     WHERE p."name" = "bar" AND q."name" = "grault"
     """
     query = CypherQuery(path)
@@ -502,7 +502,7 @@ def test_apply_cypher(mock_graph_literal):
 
     gf.dataframe["time"] = np.NaN
     gf.dataframe.at[gf.graph.roots[0], "time"] = 5.0
-    path = u"""MATCH ("*", p)
+    path = """MATCH ("*", p)
     WHERE p."time" IS NOT NAN"""
     match = [gf.graph.roots[0]]
     query = CypherQuery(path)
@@ -510,7 +510,7 @@ def test_apply_cypher(mock_graph_literal):
 
     gf.dataframe["time"] = 5.0
     gf.dataframe.at[gf.graph.roots[0], "time"] = np.NaN
-    path = u"""MATCH ("*", p)
+    path = """MATCH ("*", p)
     WHERE p."time" IS NAN"""
     match = [gf.graph.roots[0]]
     query = CypherQuery(path)
@@ -518,7 +518,7 @@ def test_apply_cypher(mock_graph_literal):
 
     gf.dataframe["time"] = np.Inf
     gf.dataframe.at[gf.graph.roots[0], "time"] = 5.0
-    path = u"""MATCH ("*", p)
+    path = """MATCH ("*", p)
     WHERE p."time" IS NOT INF"""
     match = [gf.graph.roots[0]]
     query = CypherQuery(path)
@@ -526,7 +526,7 @@ def test_apply_cypher(mock_graph_literal):
 
     gf.dataframe["time"] = 5.0
     gf.dataframe.at[gf.graph.roots[0], "time"] = np.Inf
-    path = u"""MATCH ("*", p)
+    path = """MATCH ("*", p)
     WHERE p."time" IS INF"""
     match = [gf.graph.roots[0]]
     query = CypherQuery(path)
@@ -535,7 +535,7 @@ def test_apply_cypher(mock_graph_literal):
     names = gf.dataframe["name"].copy()
     gf.dataframe["name"] = None
     gf.dataframe.at[gf.graph.roots[0], "name"] = names.iloc[0]
-    path = u"""MATCH ("*", p)
+    path = """MATCH ("*", p)
     WHERE p."name" IS NOT NONE"""
     match = [gf.graph.roots[0]]
     query = CypherQuery(path)
@@ -543,7 +543,7 @@ def test_apply_cypher(mock_graph_literal):
 
     gf.dataframe["name"] = names
     gf.dataframe.at[gf.graph.roots[0], "name"] = None
-    path = u"""MATCH ("*", p)
+    path = """MATCH ("*", p)
     WHERE p."name" IS NONE"""
     match = [gf.graph.roots[0]]
     query = CypherQuery(path)
@@ -553,13 +553,13 @@ def test_apply_cypher(mock_graph_literal):
 def test_cypher_and_compound_query(mock_graph_literal):
     gf = GraphFrame.from_literal(mock_graph_literal)
     compound_query1 = parse_cypher_query(
-        u"""
+        """
         {MATCH ("*", p) WHERE p."time (inc)" >= 20 AND p."time (inc)" <= 60}
         AND {MATCH ("*", p) WHERE p."time (inc)" >= 60}
         """
     )
     compound_query2 = parse_cypher_query(
-        u"""
+        """
         MATCH ("*", p)
         WHERE {p."time (inc)" >= 20 AND p."time (inc)" <= 60} AND {p."time (inc)" >= 60}
         """
@@ -576,13 +576,13 @@ def test_cypher_and_compound_query(mock_graph_literal):
 def test_cypher_or_compound_query(mock_graph_literal):
     gf = GraphFrame.from_literal(mock_graph_literal)
     compound_query1 = parse_cypher_query(
-        u"""
+        """
         {MATCH ("*", p) WHERE p."time (inc)" = 5.0}
         OR {MATCH ("*", p) WHERE p."time (inc)" = 10.0}
         """
     )
     compound_query2 = parse_cypher_query(
-        u"""
+        """
         MATCH ("*", p)
         WHERE {p."time (inc)" = 5.0} OR {p."time (inc)" = 10.0}
         """
@@ -606,13 +606,13 @@ def test_cypher_or_compound_query(mock_graph_literal):
 def test_cypher_xor_compound_query(mock_graph_literal):
     gf = GraphFrame.from_literal(mock_graph_literal)
     compound_query1 = parse_cypher_query(
-        u"""
+        """
         {MATCH ("*", p) WHERE p."time (inc)" >= 5.0 AND p."time (inc)" <= 10.0}
         XOR {MATCH ("*", p) WHERE p."time (inc)" = 10.0}
         """
     )
     compound_query2 = parse_cypher_query(
-        u"""
+        """
         MATCH ("*", p)
         WHERE {p."time (inc)" >= 5.0 AND p."time (inc)" <= 10.0} XOR {p."time (inc)" = 10.0}
         """
@@ -642,19 +642,19 @@ def test_leaf_query(small_mock2):
     nonleaves = list(nodes - set(matches))
     obj_query = QueryMatcher([{"depth": -1}])
     str_query_numeric = parse_cypher_query(
-        u"""
+        """
         MATCH (p)
         WHERE p."depth" = -1
         """
     )
     str_query_is_leaf = parse_cypher_query(
-        u"""
+        """
         MATCH (p)
         WHERE p IS LEAF
         """
     )
     str_query_is_not_leaf = parse_cypher_query(
-        u"""
+        """
         MATCH (p)
         WHERE p IS NOT LEAF
         """
