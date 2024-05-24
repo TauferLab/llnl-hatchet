@@ -5,7 +5,7 @@ project('llnl-hatchet', 'cython',
 
 # Get the Meson Python object, a dependency object to Python for extension modules,
 # and the path to the top-level install directory
-py = import('python').find_installation(pure: false)
+py = import('python').find_installation('python3', required: true, pure: false)
 py_dep = py.dependency()
 py_top_install_dir = py.get_install_dir()
 
