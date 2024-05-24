@@ -6,7 +6,7 @@ logo-hex.png export-ignore
 install.sh export-ignore
 CHANGELOG.md export-ignore
 .pre-commit-config.yaml export-ignore
-.fake8 export-ignore
+.flake8 export-ignore
 .coveragerc export-ignore
 .codecov.yml export-ignore
 docs export-ignore
