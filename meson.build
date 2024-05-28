@@ -1,7 +1,7 @@
 # Setup the Meson Project
 project('llnl-hatchet', 'cython',
     version: run_command(
-        ['hatchet/utils/print_version.py'],
+        ['python3 hatchet/utils/print_version.py'],
         check: true
     ).stdout().strip()
 )
