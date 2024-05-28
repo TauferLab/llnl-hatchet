@@ -2,7 +2,7 @@
 project('llnl-hatchet', 'cython',
     version: run_command(
         ['hatchet/utils/print_version.py'],
-        check=true
+        check: true
     ).stdout().strip()
 )
 
