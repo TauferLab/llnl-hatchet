@@ -10,7 +10,6 @@ foreach mod_name : cython_module_names
     py.extension_module(
         mod_name,
         mod_name + '.pyx',
-        dependencies: py_dep,
         subdir: 'hatchet' / 'cython_modules' / 'libs',
         install: true
     )
