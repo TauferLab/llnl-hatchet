@@ -25,7 +25,7 @@ jobs:
         with:
           platforms: all
 
-      - uses: pypa/cibuildwheel@v2
+      - uses: pypa/cibuildwheel@v2.18
         env:
           CIBW_SKIP: pp* *musllinux*
           CIBW_ARCHS_LINUX: auto aarch64 ppc64le
@@ -97,7 +97,7 @@ jobs:
           name: artifact
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@v1
+      - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
@@ -117,7 +117,7 @@ jobs:
           name: artifact
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@v1
+      - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
