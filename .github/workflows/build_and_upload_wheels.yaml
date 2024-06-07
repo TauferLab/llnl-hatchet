@@ -2,8 +2,8 @@ name: Build wheels
 
 on:
   # Uncomment for testing through a PR
-  # pull_request:
-  #   branches: [develop, releases/**]
+  pull_request:
+    branches: [develop, releases/**]
   workflow_dispatch:
   release:
     types:
@@ -35,39 +35,6 @@ jobs:
           name: hatchet_build_artifacts_wheels_linux_3
           path: ./wheelhouse/*.whl
 
-  # TODO: uncomment if/when we decide to build wheels for macOS
-  # build_wheels_macos_36_37:
-  #   name: Build wheels for Python 3.6 and 3.7 on macOS
-  #   runs-on: macos-12
-  #   steps:
-  #     - uses: actions/checkout@v3
-
-  #     - uses: pypa/cibuildwheel@v2.12.1
-  #       env:
-  #         CIBW_SKIP: pp*
-  #         CIBW_ARCHS_MACOS: x86_64
-  #         CIBW_PROJECT_REQUIRES_PYTHON: ">=3.6,<3.8"
-
-  #     - uses: actions/upload-artifact@v3
-  #       with:
-  #         path: ./wheelhouse/*.whl
-
-  # build_wheels_macos_38_plus:
-  #   name: Build wheels for Python 3.8+ on macOS
-  #   runs-on: macos-12
-  #   steps:
-  #     - uses: actions/checkout@v3
-
-  #     - uses: pypa/cibuildwheel@v2.12.1
-  #       env:
-  #         CIBW_SKIP: pp*
-  #         CIBW_ARCHS_MACOS: x86_64 universal2 arm64
-  #         CIBW_PROJECT_REQUIRES_PYTHON: ">=3.8"
-
-  #     - uses: actions/upload-artifact@v3
-  #       with:
-  #         path: ./wheelhouse/*.whl
-
   build_sdist:
     name: Build sdist
     runs-on: ubuntu-20.04
@@ -80,7 +47,7 @@ jobs:
       - name: Build sdist
         run: python -m build -s
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: hatchet_build_artifacts_sdist
           path: dist/*.tar.gz
@@ -113,7 +80,7 @@ jobs:
         # - build_wheels_macos_38_plus
       - build_sdist
     runs-on: ubuntu-20.04
-    if: (github.event_name == 'release' && github.event.action == 'published') || github.event_name == 'workflow_dispatch'
+    # if: (github.event_name == 'release' && github.event.action == 'published') || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/download-artifact@v4
         with:
