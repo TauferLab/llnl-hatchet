@@ -6,7 +6,7 @@
 from functools import total_ordering
 
 from .frame import Frame
-from .perf_measure import annotate
+from .util.perf_measure import annotate
 
 
 _node_annotate = annotate(fmt="Node.{}")

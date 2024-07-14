@@ -15,7 +15,7 @@ import sys
 
 from .errors import InvalidQueryPath, InvalidQueryFilter, MultiIndexModeMismatch
 from .query import Query
-from ..util import annotate
+from ..util.perf_measure import annotate
 
 
 def _process_multi_index_mode(apply_result, multi_index_mode):

@@ -2,16 +2,27 @@ import os
 
 try:
     from pycaliper import annotate_function
-    from pycaliper.instrumentation import region_begin, region_end
+    from pycaliper.instrumentation import begin_region, end_region
 
     _PYCALIPER_AVAILABLE = True
 except Exception:
     _PYCALIPER_AVAILABLE = False
 
+try:
+    import perfflowaspect.aspect
+
+    _PERFFLOWASPECT_AVAILABLE = True
+except Exception:
+    _PERFFLOWASPECT_AVAILABLE = False
+
 
 def _validate_perf_plugin(plugin_name):
+    print("Perf Plugin =", plugin_name)
+    print("Caliper is available?", _PYCALIPER_AVAILABLE)
     if plugin_name.lower() == "caliper" and _PYCALIPER_AVAILABLE:
         return "caliper"
+    elif plugin_name.lower() == "perfflowaspect" and _PYCALIPER_AVAILABLE:
+        return "perfflowaspect"
     return "none"
 
 
@@ -30,10 +41,12 @@ def annotate(name=None, fmt=None):
             real_name = name
             if name is None or name == "":
                 real_name = func.__name__
-            if fmt is not None or fmt != "":
+            if fmt is not None and fmt != "":
                 real_name = fmt.format(real_name)
             if _HATCHET_PERF_PLUGIN == "caliper":
                 return annotate_function(name=real_name)(func)
+            elif _HATCHET_PERF_PLUGIN == "perfflowaspect":
+                return perfflowaspect.aspect.critical_path(pointcut="around")(func)
             else:
                 return func
 
@@ -43,12 +56,12 @@ def annotate(name=None, fmt=None):
 def begin_code_region(name):
     if _HATCHET_PERF_ENABLED:
         if _HATCHET_PERF_PLUGIN == "caliper":
-            region_begin(name)
+            begin_region(name)
             return
 
 
 def end_code_region(name):
     if _HATCHET_PERF_ENABLED:
         if _HATCHET_PERF_PLUGIN == "caliper":
-            region_end(name)
+            end_region(name)
             return
