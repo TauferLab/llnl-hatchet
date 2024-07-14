@@ -12,7 +12,7 @@ from .query import Query
 from .compound import CompoundQuery
 from .object_dialect import ObjectQuery
 from .string_dialect import parse_string_dialect
-from ..util.perf_measure import annotate
+from ..util.perf_measure import annotate, begin_code_region, end_code_region
 
 
 _query_engine_annotate = annotate(fmt="QueryEngine.{}")
@@ -82,12 +82,16 @@ class QueryEngine:
         for i, node_query in enumerate(query):
             _, filter_func = node_query
             row = None
+            begin_code_region("get_perf_data_for_node")
             if isinstance(dframe.index, pd.MultiIndex):
                 row = pd.concat([dframe.loc[node]], keys=[node], names=["node"])
             else:
                 row = dframe.loc[node]
+            end_code_region("get_perf_data_for_node")
+            begin_code_region("apply_predicate")
             if filter_func(row):
                 matches.append(i)
+            end_code_region("apply_predicate")
         self.search_cache[node._hatchet_nid] = matches
 
     @_query_engine_annotate
