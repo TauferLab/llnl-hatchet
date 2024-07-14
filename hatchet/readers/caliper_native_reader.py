@@ -18,6 +18,9 @@ from hatchet.util.timer import Timer
 from hatchet.util.perf_measure import annotate
 
 
+_cali_native_reader_annotate = annotate(fmt="CaliperNativeReader.{}")
+
+
 def __raise_cali_type_error(msg):
     raise ValueError(msg)
 
@@ -46,7 +49,7 @@ class CaliperNativeReader:
         ),
     }
 
-    @annotate("CaliperNativeReader.__init__")
+    @_cali_native_reader_annotate
     def __init__(self, filename_or_caliperreader, native, string_attributes):
         """Read in a native cali using Caliper's python reader.
 
@@ -83,7 +86,7 @@ class CaliperNativeReader:
         if isinstance(self.string_attributes, str):
             self.string_attributes = [self.string_attributes]
 
-    @annotate("CaliperNativeReader._create_metric_df")
+    @_cali_native_reader_annotate
     def _create_metric_df(self, metrics):
         """Make a list of metric columns and create a dataframe, group by node"""
         for col in self.record_data_cols:
@@ -93,7 +96,7 @@ class CaliperNativeReader:
         df_new = df_metrics.groupby(df_metrics["nid"]).aggregate("first").reset_index()
         return df_new
 
-    @annotate("CaliperNativeReader._reset_metrics")
+    @_cali_native_reader_annotate
     def _reset_metrics(self, metrics):
         """Since the initial functions (i.e. main) are only called once, this keeps a small subset
         of the timeseries data and resets the rest so future iterations will be filled with nans
@@ -110,7 +113,7 @@ class CaliperNativeReader:
                 new_mets.append({k: node_dict.get(k, np.nan) for k in cols_to_keep})
         return new_mets
 
-    @annotate("CaliperNativeReader.read_metrics")
+    @_cali_native_reader_annotate
     def read_metrics(self, ctx="path"):
         """append each metrics table to a list and return the list, split on timeseries_level if exists"""
         metric_dfs = []
@@ -197,7 +200,7 @@ class CaliperNativeReader:
         # will return a list with only one element unless it is a timeseries
         return metric_dfs
 
-    @annotate("CaliperNativeReader.create_graph")
+    @_cali_native_reader_annotate
     def create_graph(self, ctx="path"):
         list_roots = []
 
@@ -353,7 +356,7 @@ class CaliperNativeReader:
 
         return list_roots
 
-    @annotate("CaliperNativeReader._parse_metadata")
+    @_cali_native_reader_annotate
     def _parse_metadata(self, mdata):
         """Convert Caliper Metadata values into correct Python objects.
 
@@ -392,7 +395,7 @@ class CaliperNativeReader:
                         parsed_mdata[k] = v
         return parsed_mdata
 
-    @annotate("CaliperNativeReader.read")
+    @_cali_native_reader_annotate
     def read(self):
         """Read the caliper records to extract the calling context tree."""
         if isinstance(self.filename_or_caliperreader, str):
@@ -578,7 +581,7 @@ class CaliperNativeReader:
         #  othewise we'll have populated the timeseries list of gfs attribute and can ignore the return value
         return self.gf_list[0]
 
-    @annotate("CaliperNativeReader.read_timeseries")
+    @_cali_native_reader_annotate
     def read_timeseries(self, level="loop.start_iteration"):
         """Read in a timeseries Cali file. We need to intercept the read function
         so we can get a list of profiles for thicket

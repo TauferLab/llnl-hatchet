@@ -12,6 +12,9 @@ from hatchet.frame import Frame
 from hatchet.util.perf_measure import annotate
 
 
+_literal_reader_annotate = annotate(fmt="LiteralReader.{}")
+
+
 class LiteralReader:
     """Create a GraphFrame from a list of dictionaries.
 
@@ -60,7 +63,7 @@ class LiteralReader:
         (GraphFrame): graphframe containing data from dictionaries
     """
 
-    @annotate("LiteralReader.__init__")
+    @_literal_reader_annotate
     def __init__(self, graph_dict):
         """Read from list of dictionaries.
 
@@ -68,7 +71,7 @@ class LiteralReader:
         """
         self.graph_dict = graph_dict
 
-    @annotate("LiteralReader.parse_node_literal")
+    @_literal_reader_annotate
     def parse_node_literal(
         self, frame_to_node_dict, node_dicts, child_dict, hparent, seen_nids
     ):
@@ -113,7 +116,7 @@ class LiteralReader:
                     frame_to_node_dict, node_dicts, child, hnode, seen_nids
                 )
 
-    @annotate("LiteralReader.read")
+    @_literal_reader_annotate
     def read(self):
         list_roots = []
         node_dicts = []

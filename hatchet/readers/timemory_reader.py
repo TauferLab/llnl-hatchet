@@ -15,10 +15,13 @@ from ..util.timer import Timer
 from ..util.perf_measure import annotate
 
 
+_timemory_reader_annotate = annotate(fmt="TimemoryReader.{}")
+
+
 class TimemoryReader:
     """Read in timemory JSON output"""
 
-    @annotate("TimemoryReader.__init__")
+    @_timemory_reader_annotate
     def __init__(self, input, select=None, **_kwargs):
         """Arguments:
         input (str or file-stream or dict or None):
@@ -79,7 +82,7 @@ class TimemoryReader:
         else:
             raise TypeError("select must be None or list of string")
 
-    @annotate("TimemoryReader.create_graph")
+    @_timemory_reader_annotate
     def create_graph(self):
         """Create graph and dataframe"""
         list_roots = []
@@ -566,7 +569,7 @@ class TimemoryReader:
             graph, dataframe, exc_metrics, inc_metrics, self.default_metric
         )
 
-    @annotate("TimemoryReader.read")
+    @_timemory_reader_annotate
     def read(self):
         """Read timemory json."""
 

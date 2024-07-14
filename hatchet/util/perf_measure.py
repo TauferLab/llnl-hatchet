@@ -22,7 +22,7 @@ else:
     _HATCHET_PERF_ENABLED = False
 
 
-def annotate(name=None):
+def annotate(name=None, fmt=None):
     def inner_decorator(func):
         if not _HATCHET_PERF_ENABLED:
             return func
@@ -30,10 +30,14 @@ def annotate(name=None):
             real_name = name
             if name is None or name == "":
                 real_name = func.__name__
+            if fmt is not None or fmt != "":
+                real_name = fmt.format(real_name)
             if _HATCHET_PERF_PLUGIN == "caliper":
                 return annotate_function(name=real_name)(func)
             else:
                 return func
+
+    return inner_decorator
 
 
 def begin_code_region(name):

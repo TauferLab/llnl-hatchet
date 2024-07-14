@@ -14,6 +14,9 @@ from hatchet.frame import Frame
 from hatchet.util.perf_measure import annotate
 
 
+_json_reader_annotate = annotate(fmt="JsonReader.{}")
+
+
 class JsonReader:
     """Create a GraphFrame from a json string of the following format.
 
@@ -21,7 +24,7 @@ class JsonReader:
         (GraphFrame): graphframe containing data from dictionaries
     """
 
-    @annotate("JsonReader.__init__")
+    @_json_reader_annotate
     def __init__(self, json_spec):
         """Read from a json string specification of a graphframe
 
@@ -29,7 +32,7 @@ class JsonReader:
         """
         self.spec_dict = json.loads(json_spec)
 
-    @annotate("JsonReader.read")
+    @_json_reader_annotate
     def read(self):
         roots = []
         for graph_spec in self.spec_dict["graph"]:

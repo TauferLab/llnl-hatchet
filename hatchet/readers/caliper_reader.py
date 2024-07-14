@@ -24,10 +24,13 @@ from hatchet.util.perf_measure import annotate
 unknown_label_counter = 0
 
 
+_cali_reader_annotate = annotate(fmt="CaliperReader.{}")
+
+
 class CaliperReader:
     """Read in a Caliper file (`cali` or split JSON) or file-like object."""
 
-    @annotate("CaliperReader.__init__")
+    @_cali_reader_annotate
     def __init__(self, filename_or_stream, query=""):
         """Read from Caliper files (`cali` or split JSON).
 
@@ -57,7 +60,7 @@ class CaliperReader:
         if isinstance(self.filename_or_stream, str):
             _, self.filename_ext = os.path.splitext(filename_or_stream)
 
-    @annotate("CaliperReader.read_json_sections")
+    @_cali_reader_annotate
     def read_json_sections(self):
         # if cali-query exists, extract data from .cali to a file-like object
         if self.filename_ext == ".cali":
@@ -143,7 +146,7 @@ class CaliperReader:
             if self.json_cols[idx] != "rank" and item["is_value"] is True:
                 self.metric_columns.append(self.json_cols[idx])
 
-    @annotate("CaliperReader.create_graph")
+    @_cali_reader_annotate
     def create_graph(self):
         list_roots = []
 
@@ -193,7 +196,7 @@ class CaliperReader:
 
         return list_roots
 
-    @annotate("CaliperReader.read")
+    @_cali_reader_annotate
     def read(self):
         """Read the caliper JSON file to extract the calling context tree."""
         with self.timer.phase("read json"):

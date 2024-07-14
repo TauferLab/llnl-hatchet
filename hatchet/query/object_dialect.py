@@ -220,7 +220,7 @@ def _process_predicate(attr_filter, multi_index_mode):
 class ObjectQuery(Query):
     """Class for representing and parsing queries using the Object-based dialect."""
 
-    @annotate("ObjectQuery.__init__")
+    @annotate(fmt="ObjectQuery.{}")
     def __init__(self, query, multi_index_mode="off"):
         """Builds a new ObjectQuery from an instance of the Object-based dialect syntax.
 

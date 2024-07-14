@@ -22,6 +22,9 @@ except ImportError:
     ABC = ABCMeta("ABC", (object,), {"__slots__": ()})
 
 
+_dataframe_reader_annotate = annotate(fmt="DataframeReader.{}")
+
+
 @annotate()
 def _get_node_from_df_iloc(df, ind):
     node = None
@@ -64,7 +67,7 @@ def _reconstruct_graph(df, rel_dict):
 class DataframeReader(ABC):
     """Abstract Base Class for reading in checkpointing files."""
 
-    @annotate("DataFrameReader.__init__")
+    @_dataframe_reader_annotate
     def __init__(self, filename):
         self.filename = filename
 
@@ -72,7 +75,7 @@ class DataframeReader(ABC):
     def _read_dataframe_from_file(self, **kwargs):
         pass
 
-    @annotate("DataFrameReader.read")
+    @_dataframe_reader_annotate
     def read(self, **kwargs):
         df = self._read_dataframe_from_file(**kwargs)
         rel_dict = _get_parents_and_children(df)

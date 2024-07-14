@@ -14,10 +14,13 @@ from hatchet.frame import Frame
 from hatchet.util.perf_measure import annotate
 
 
+_tau_reader_annotate = annotate(fmt="TAUReader.{}")
+
+
 class TAUReader:
     """Read in a profile generated using TAU."""
 
-    @annotate("TAUReader.__init__")
+    @_tau_reader_annotate
     def __init__(self, dirname):
         self.dirname = dirname
         self.node_dicts = []
@@ -30,7 +33,7 @@ class TAUReader:
         self.multiple_ranks = False
         self.multiple_threads = False
 
-    @annotate("TAUReader.create_node_dict")
+    @_tau_reader_annotate
     def create_node_dict(
         self,
         node,
@@ -58,7 +61,7 @@ class TAUReader:
             node_dict[columns[i + 1]] = metric_values[i]
         return node_dict
 
-    @annotate("TAUReader.create_graph")
+    @_tau_reader_annotate
     def create_graph(self):
         def _get_name_file_module(is_parent, node_info, symbol):
             """This function gets the name, file and module information
@@ -447,7 +450,7 @@ class TAUReader:
 
         return list_roots
 
-    @annotate("TAUReader.read")
+    @_tau_reader_annotate
     def read(self):
         """Read the TAU profile file to extract the calling context tree."""
         # Add all nodes and roots.

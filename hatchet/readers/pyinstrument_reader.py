@@ -14,15 +14,18 @@ from hatchet.frame import Frame
 from hatchet.util.perf_measure import annotate
 
 
+_pyinstrument_reader_annotate = annotate(fmt="PyinstrumentReader.{}")
+
+
 class PyinstrumentReader:
-    @annotate("PyInstrumentReader.__init__")
+    @_pyinstrument_reader_annotate
     def __init__(self, filename):
         self.pyinstrument_json_filename = filename
         self.graph_dict = {}
         self.list_roots = []
         self.node_dicts = []
 
-    @annotate("PyInstrumentReader.create_graph")
+    @_pyinstrument_reader_annotate
     def create_graph(self):
         def parse_node_literal(child_dict, hparent):
             """Create node_dict for one node and then call the function
@@ -88,7 +91,7 @@ class PyinstrumentReader:
 
         return graph
 
-    @annotate("PyInstrumentReader.read")
+    @_pyinstrument_reader_annotate
     def read(self):
         with open(self.pyinstrument_json_filename) as pyinstrument_json:
             self.graph_dict = json.load(pyinstrument_json)

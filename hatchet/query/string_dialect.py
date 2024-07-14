@@ -18,6 +18,9 @@ from .query import Query
 from ..util.perf_measure import annotate
 
 
+_string_query_annotate = annotate(fmt="StringQuery.{}")
+
+
 # PEG grammar for the String-based dialect
 CYPHER_GRAMMAR = """
 FullQuery: path_expr=MatchExpr(cond_expr=WhereExpr)?;
@@ -99,7 +102,7 @@ def filter_check_types(type_check, df_row, filt_lambda):
 class StringQuery(Query):
     """Class for representing and parsing queries using the String-based dialect."""
 
-    @annotate("StringQuery.__init__")
+    @_string_query_annotate
     def __init__(self, cypher_query, multi_index_mode="off"):
         """Builds a new StringQuery object representing a query in the String-based dialect.
 
@@ -131,7 +134,7 @@ class StringQuery(Query):
         self._build_lambdas()
         self._build_query()
 
-    @annotate("StringQuery._build_query")
+    @_string_query_annotate
     def _build_query(self):
         """Builds the entire query using 'match' and 'rel' using
         the pre-parsed quantifiers and predicates.
@@ -153,7 +156,7 @@ class StringQuery(Query):
                 else:
                     self.rel(quantifier=wcard, predicate=eval(filt_str))
 
-    @annotate("StringQuery._build_lambdas")
+    @_string_query_annotate
     def _build_lambdas(self):
         """Constructs the final predicate lambdas from the pre-parsed
         predicate information.
@@ -180,7 +183,7 @@ class StringQuery(Query):
                 )
                 self.lambda_filters[i] = bool_expr
 
-    @annotate("StringQuery._parse_path")
+    @_string_query_annotate
     def _parse_path(self, path_obj):
         """Parses the MATCH statement of a String-based query."""
         nodes = path_obj.path.nodes
@@ -194,7 +197,7 @@ class StringQuery(Query):
                 self.wcard_pos[n.name] = idx
             idx += 1
 
-    @annotate("StringQuery._parse_conditions")
+    @_string_query_annotate
     def _parse_conditions(self, cond_expr):
         """Top level function for parsing the WHERE statement of
         a String-based query.

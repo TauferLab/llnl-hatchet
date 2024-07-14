@@ -12,6 +12,9 @@ from hatchet.frame import Frame
 from hatchet.util.timer import Timer
 from hatchet.util.perf_measure import annotate
 
+_spot_dset_reader_annotate = annotate(fmt="SpotDatasetReader.{}")
+_spot_db_reader_annotate = annotate(fmt="SpotDBReader.{}")
+
 
 def _find_child_node(node, name):
     """Return child with given name from parent node"""
@@ -24,7 +27,7 @@ def _find_child_node(node, name):
 class SpotDatasetReader:
     """Reads a (single-run) dataset from SpotDB"""
 
-    @annotate("SpotDatasetReader.__init__")
+    @_spot_dset_reader_annotate
     def __init__(self, regionprofile, metadata, attr_info):
         """Initialize SpotDataset reader
 
@@ -51,7 +54,7 @@ class SpotDatasetReader:
 
         self.timer = Timer()
 
-    @annotate("SpotDatasetReader.create_graph")
+    @_spot_dset_reader_annotate
     def create_graph(self):
         """Create the graph. Fills in df_data and metric_columns."""
 
@@ -84,7 +87,7 @@ class SpotDatasetReader:
 
             self.df_data.append(dict({"name": name, "node": node}, **metrics))
 
-    @annotate("SpotDatasetReader.read")
+    @_spot_dset_reader_annotate
     def read(self, default_metric="Total time (inc)"):
         """Create GraphFrame for the given Spot dataset."""
 
@@ -120,7 +123,7 @@ class SpotDatasetReader:
             default_metric=default_metric,
         )
 
-    @annotate("SpotDatasetReader._create_node")
+    @_spot_dset_reader_annotate
     def _create_node(self, path):
         parent = self.roots.get(path[0], None)
         if parent is None:
@@ -141,7 +144,7 @@ class SpotDatasetReader:
 class SpotDBReader:
     """Import multiple runs as graph frames from a SpotDB instance"""
 
-    @annotate("SpotDBReader.__init__")
+    @_spot_db_reader_annotate
     def __init__(self, db_key, list_of_ids=None, default_metric="Total time (inc)"):
         """Initialize SpotDBReader
 
@@ -162,7 +165,7 @@ class SpotDBReader:
         self.list_of_ids = list_of_ids
         self.default_metric = default_metric
 
-    @annotate("SpotDBReader.read")
+    @_spot_db_reader_annotate
     def read(self):
         """Read given runs from SpotDB
 

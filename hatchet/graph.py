@@ -9,6 +9,9 @@ from .node import Node, traversal_order, node_traversal_order
 from .util.perf_measure import annotate
 
 
+_graph_annotate = annotate(fmt="Graph.{}")
+
+
 @annotate()
 def index_by(attr, objects):
     """Put objects into lists based on the value of an attribute.
@@ -25,13 +28,13 @@ def index_by(attr, objects):
 class Graph:
     """A possibly multi-rooted tree or graph from one input dataset."""
 
-    @annotate("Graph.__init__")
+    @_graph_annotate
     def __init__(self, roots):
         assert roots is not None
         self.roots = roots
         self.node_ordering = False
 
-    @annotate("Graph.traverse")
+    @_graph_annotate
     def traverse(self, order="pre", attrs=None, visited=None):
         """Preorder traversal of all roots of this Graph.
 
@@ -51,7 +54,7 @@ class Graph:
             for value in root.traverse(order=order, attrs=attrs, visited=visited):
                 yield value
 
-    @annotate("Graph.node_order_traverse")
+    @_graph_annotate
     def node_order_traverse(self, order="pre", attrs=None, visited=None):
         """Preorder traversal of all roots of this Graph, sorting by "node order" column.
 
@@ -74,7 +77,7 @@ class Graph:
             ):
                 yield value
 
-    @annotate("Graph.is_tree")
+    @_graph_annotate
     def is_tree(self):
         """True if this graph is a tree, false otherwise."""
         if len(self.roots) > 1:
@@ -84,7 +87,7 @@ class Graph:
         list(self.traverse(visited=visited))
         return all(v == 1 for v in visited.values())
 
-    @annotate("Graph.find_merges")
+    @_graph_annotate
     def find_merges(self):
         """Find nodes that have the same parent and frame.
 
@@ -142,7 +145,7 @@ class Graph:
 
         return merges
 
-    @annotate("Graph.merge_nodes")
+    @_graph_annotate
     def merge_nodes(self, merges):
         """Merge some nodes in a graph into others.
 
@@ -167,13 +170,13 @@ class Graph:
                 child.parents = transform(child.parents)
         self.roots = transform(self.roots)
 
-    @annotate("Graph.normalize")
+    @_graph_annotate
     def normalize(self):
         merges = self.find_merges()
         self.merge_nodes(merges)
         return merges
 
-    @annotate("Graph.copy")
+    @_graph_annotate
     def copy(self, old_to_new=None):
         """Create and return a copy of this graph.
 
@@ -202,7 +205,7 @@ class Graph:
 
         return graph
 
-    @annotate("Graph.union")
+    @_graph_annotate
     def union(self, other, old_to_new=None):
         """Create the union of self and other and return it as a new Graph.
 
@@ -353,7 +356,7 @@ class Graph:
 
         return graph
 
-    @annotate("Graph.enumerate_depth")
+    @_graph_annotate
     def enumerate_depth(self):
         def _iter_depth(node, visited):
             for child in node.children:
@@ -368,7 +371,7 @@ class Graph:
             root._depth = 0  # depth of root node is 0
             _iter_depth(root, visited)
 
-    @annotate("Graph.enumerate_traverse")
+    @_graph_annotate
     def enumerate_traverse(self):
         if not self._check_enumerate_traverse():
             # if "node order" column exists, we traverse sorting by _hatchet_nid
@@ -392,12 +395,12 @@ class Graph:
                 if i != node._hatchet_nid:
                     return False
 
-    @annotate("Graph.__len__")
+    @_graph_annotate
     def __len__(self):
         """Size of the graph in terms of number of nodes."""
         return sum(1 for _ in self.traverse())
 
-    @annotate("Graph.__eq__")
+    @_graph_annotate
     def __eq__(self, other):
         """Check if two graphs have the same structure by comparing frame at each
         node.
@@ -430,12 +433,12 @@ class Graph:
 
         return True
 
-    @annotate("Graph.__ne__")
+    @_graph_annotate
     def __ne__(self, other):
         return not (self == other)
 
     @staticmethod
-    @annotate("Graph.from_lists")
+    @_graph_annotate
     def from_lists(*roots):
         """Convenience method to invoke Node.from_lists() on each root value."""
         if not all(isinstance(r, (list, tuple)) for r in roots):

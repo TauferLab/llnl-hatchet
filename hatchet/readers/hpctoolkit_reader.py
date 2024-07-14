@@ -43,13 +43,17 @@ from hatchet.util.perf_measure import annotate
 src_file = 0
 
 
+_hpctk_reader_mod_annotate = annotate(fmt="hpctoolkit_reader.{}")
+_hpctk_reader_annotate = annotate(fmt="HPCToolkitReader.{}")
+
+
 def init_shared_array(buf_):
     """Initialize shared array."""
     global shared_metrics
     shared_metrics = buf_
 
 
-@annotate("hpctoolkit_reader.read_metricdb_file")
+@_hpctk_reader_mod_annotate
 def read_metricdb_file(args):
     """Read a single metricdb file into a 1D array."""
     (
@@ -95,7 +99,7 @@ class HPCToolkitReader:
     metric-db files.
     """
 
-    @annotate("HPCToolkitReader.__init__")
+    @_hpctk_reader_annotate
     def __init__(self, dir_name):
         # this is the name of the HPCToolkit database directory. The directory
         # contains an experiment.xml and some metric-db files
@@ -150,7 +154,7 @@ class HPCToolkitReader:
 
         self.timer = Timer()
 
-    @annotate("HPCToolkitReader.fill_tables")
+    @_hpctk_reader_annotate
     def fill_tables(self):
         """Read certain sections of the experiment.xml file to create dicts of load
         modules, src_files, procedure_names, and metric_names.
@@ -175,7 +179,7 @@ class HPCToolkitReader:
             self.metric_names,
         )
 
-    @annotate("HPCToolkitReader.read_all_metricdb_files")
+    @_hpctk_reader_annotate
     def read_all_metricdb_files(self):
         """Read all the metric-db files and create a dataframe with num_nodes X
         num_metricdb_files rows and num_metrics columns. Three additional columns
@@ -239,7 +243,7 @@ class HPCToolkitReader:
         # subtract_exclusive_metric_vals/ num nodes is already calculated
         self.total_execution_threads = self.num_threads_per_rank * self.num_ranks
 
-    @annotate("HPCToolkitReader.read")
+    @_hpctk_reader_annotate
     def read(self):
         """Read the experiment.xml file to extract the calling context tree and create
         a dataframe out of it. Then merge the two dataframes to create the final
@@ -324,7 +328,7 @@ class HPCToolkitReader:
 
         return hatchet.graphframe.GraphFrame(graph, dataframe, exc_metrics, inc_metrics)
 
-    @annotate("HPCToolkitReader.parse_xml_children")
+    @_hpctk_reader_annotate
     def parse_xml_children(self, xml_node, hnode):
         """Parses all children of an XML node."""
         for xml_child in xml_node:
@@ -333,7 +337,7 @@ class HPCToolkitReader:
                 line = int(xml_node.get("l"))
                 self.parse_xml_node(xml_child, nid, line, hnode)
 
-    @annotate("HPCToolkitReader.parse_xml_node")
+    @_hpctk_reader_annotate
     def parse_xml_node(self, xml_node, parent_nid, parent_line, hparent):
         """Parses an XML node and its children recursively."""
         nid = int(xml_node.get("i"))
@@ -422,7 +426,7 @@ class HPCToolkitReader:
             hparent.add_child(hnode)
             self.parse_xml_children(xml_node, hnode)
 
-    @annotate("HPCToolkitReader.create_node_dict")
+    @_hpctk_reader_annotate
     def create_node_dict(self, nid, hnode, name, node_type, src_file, line, module):
         """Create a dict with all the node attributes."""
         node_dict = {
@@ -437,7 +441,7 @@ class HPCToolkitReader:
 
         return node_dict
 
-    @annotate("HPCToolkitReader.count_cpu_threads_per_rank")
+    @_hpctk_reader_annotate
     def count_cpu_threads_per_rank(self):
         metricdb_files = glob.glob(self.dir_name + "/*.metric-db")
         cpu_thread_ids = set()
