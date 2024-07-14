@@ -12,19 +12,23 @@ from .query import Query
 from .compound import CompoundQuery
 from .object_dialect import ObjectQuery
 from .string_dialect import parse_string_dialect
+from ..util.perf_measure import annotate
 
 
 class QueryEngine:
     """Class for applying queries to GraphFrames."""
 
+    @annotate("QueryEngine.__init__")
     def __init__(self):
         """Creates the QueryEngine."""
         self.search_cache = {}
 
+    @annotate("QueryEngine.reset_cache")
     def reset_cache(self):
         """Resets the cache in the QueryEngine."""
         self.search_cache = {}
 
+    @annotate("QueryEngine.apply")
     def apply(self, query, graph, dframe):
         """Apply the query to a GraphFrame.
 
@@ -59,6 +63,7 @@ class QueryEngine:
         else:
             raise TypeError("Invalid query data type ({})".format(str(type(query))))
 
+    @annotate("QueryEngine._cache_node")
     def _cache_node(self, node, query, dframe):
         """Cache (Memoize) the parts of the query that the node matches.
 
@@ -82,6 +87,7 @@ class QueryEngine:
                 matches.append(i)
         self.search_cache[node._hatchet_nid] = matches
 
+    @annotate("QueryEngine._match_0_or_more")
     def _match_0_or_more(self, query, dframe, node, wcard_idx):
         """Process a "*" predicate in the query on a subgraph.
 
@@ -128,6 +134,7 @@ class QueryEngine:
                 return [[]]
             return None
 
+    @annotate("QueryEngine._match_1")
     def _match_1(self, query, dframe, node, idx):
         """Process a "." predicate in the query on a subgraph.
 
@@ -156,6 +163,7 @@ class QueryEngine:
             return None
         return matches
 
+    @annotate("QueryEngine._match_pattern")
     def _match_pattern(self, query, dframe, pattern_root, match_idx):
         """Try to match the query pattern starting at the provided root node.
 
@@ -221,6 +229,7 @@ class QueryEngine:
             pattern_idx += 1
         return matches
 
+    @annotate("QueryEngine._apply_impl")
     def _apply_impl(self, query, dframe, node, visited, matches):
         """Traverse the subgraph with the specified root, and collect all paths that match the query.
 

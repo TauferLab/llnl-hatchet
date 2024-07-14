@@ -5,6 +5,8 @@
 
 from functools import total_ordering
 
+from .util.perf_measure import annotate
+
 
 @total_ordering
 class Frame:
@@ -14,6 +16,7 @@ class Frame:
        attrs (dict): dictionary of attributes and values
     """
 
+    @annotate("Frame.__init__")
     def __init__(self, attrs=None, **kwargs):
         """Construct a frame from a dictionary, or from immediate kwargs.
 
@@ -48,41 +51,52 @@ class Frame:
 
         self._tuple_repr = None
 
+    @annotate("Frame.__eq__")
     def __eq__(self, other):
         return self.tuple_repr == other.tuple_repr
 
+    @annotate("Frame.__lt__")
     def __lt__(self, other):
         return self.tuple_repr < other.tuple_repr
 
+    @annotate("Frame.__gt__")
     def __gt__(self, other):
         return self.tuple_repr > other.tuple_repr
 
+    @annotate("Frame.__hash__")
     def __hash__(self):
         return hash(self.tuple_repr)
 
+    @annotate("Frame.__str__")
     def __str__(self):
         """str() with sorted attributes, so output is deterministic."""
         return "{%s}" % ", ".join("'%s': '%s'" % (k, v) for k, v in self.tuple_repr)
 
+    @annotate("Frame.__repr__")
     def __repr__(self):
         return "Frame(%s)" % self
 
     @property
+    @annotate("Frame.tuple_repr")
     def tuple_repr(self):
         """Make a tuple of attributes and values based on reader."""
         if not self._tuple_repr:
             self._tuple_repr = tuple(sorted((k, v) for k, v in self.attrs.items()))
         return self._tuple_repr
 
+    @annotate("Frame.copy")
     def copy(self):
         return Frame(self.attrs.copy())
 
+    @annotate("Frame.__getitem__")
     def __getitem__(self, name):
         return self.attrs[name]
 
+    @annotate("Frame.get")
     def get(self, name, default=None):
         return self.attrs.get(name, default)
 
+    @annotate("Frame.values")
     def values(self, names):
         """Return a tuple of attribute values from this Frame."""
         if isinstance(names, (list, tuple)):

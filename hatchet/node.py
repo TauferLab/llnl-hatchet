@@ -6,13 +6,16 @@
 from functools import total_ordering
 
 from .frame import Frame
+from .perf_measure import annotate
 
 
+@annotate()
 def traversal_order(node):
     """Deterministic key function for sorting nodes in traversals."""
     return (node.frame, id(node))
 
 
+@annotate()
 def node_traversal_order(node):
     """Deterministic key function for sorting nodes by specified "node order"
     (which gets assigned to _hatchet_nid) in traversals."""
@@ -23,6 +26,7 @@ def node_traversal_order(node):
 class Node:
     """A node in the graph. The node only stores its frame."""
 
+    @annotate("Node.__init__")
     def __init__(self, frame_obj, parent=None, hnid=-1, depth=-1):
         self.frame = frame_obj
         self._depth = depth
@@ -33,16 +37,19 @@ class Node:
             self.add_parent(parent)
         self.children = []
 
+    @annotate("Node.add_parent")
     def add_parent(self, node):
         """Adds a parent to this node's list of parents."""
         assert isinstance(node, Node)
         self.parents.append(node)
 
+    @annotate("Node.add_child")
     def add_child(self, node):
         """Adds a child to this node's list of children."""
         assert isinstance(node, Node)
         self.children.append(node)
 
+    @annotate("Node.paths")
     def paths(self):
         """List of tuples, one for each path from this node to any root.
 
@@ -58,6 +65,7 @@ class Node:
                 paths.extend([path + node_value for path in parent_paths])
             return paths
 
+    @annotate("Node.path")
     def path(self, attrs=None):
         """Path to this node from root. Raises if there are multiple paths.
 
@@ -71,6 +79,7 @@ class Node:
             raise MultiplePathError("Node has more than one path: " % paths)
         return paths[0]
 
+    @annotate("Node.dag_equal")
     def dag_equal(self, other, vs=None, vo=None):
         """Check if DAG rooted at self has the same structure as that rooted at
         other.
@@ -113,6 +122,7 @@ class Node:
 
         return True
 
+    @annotate("Node.traverse")
     def traverse(self, order="pre", attrs=None, visited=None):
         """Traverse the tree depth-first and yield each node.
 
@@ -149,6 +159,7 @@ class Node:
         if order == "post":
             yield value(self)
 
+    @annotate("Node.node_order_traverse")
     def node_order_traverse(self, order="pre", attrs=None, visited=None):
         """Traverse the tree depth-first and yield each node, sorting children by "node order".
 
@@ -187,27 +198,34 @@ class Node:
         if order == "post":
             yield value(self)
 
+    @annotate("Node.__hash__")
     def __hash__(self):
         return self._hatchet_nid
 
+    @annotate("Node.__eq__")
     def __eq__(self, other):
         return self._hatchet_nid == other._hatchet_nid
 
+    @annotate("Node.__lt__")
     def __lt__(self, other):
         return self._hatchet_nid < other._hatchet_nid
 
+    @annotate("Node.__gt__")
     def __gt__(self, other):
         return self._hatchet_nid > other._hatchet_nid
 
+    @annotate("Node.__str__")
     def __str__(self):
         """Returns a string representation of the node."""
         return str(self.frame)
 
+    @annotate("Node.copy")
     def copy(self):
         """Copy this node without preserving parents or children."""
         return Node(frame_obj=self.frame.copy())
 
     @classmethod
+    @annotate("Node.from_lists")
     def from_lists(cls, lists):
         r"""Construct a hierarchy of nodes from recursive lists.
 
@@ -278,6 +296,7 @@ In the above examples, the 'a' represents a Node with its
 
         return _from_lists(lists, None)
 
+    @annotate("Node.__repr__")
     def __repr__(self):
         return "Node({%s})" % ", ".join(
             "%s: %s" % (repr(k), repr(v)) for k, v in sorted(self.frame.attrs.items())

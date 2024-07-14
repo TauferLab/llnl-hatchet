@@ -35,14 +35,17 @@ import pandas as pd
 import numpy as np
 import warnings
 from ..util.colormaps import ColorMaps
+from ..util.perf_measure import annotate
 
 
 class ConsoleRenderer:
+    @annotate("HatchetConsoleRenderer.__init__")
     def __init__(self, unicode=False, color=False):
         self.unicode = unicode
         self.color = color
         self.visited = []
 
+    @annotate("HatchetConsoleRenderer.render")
     def render(self, roots, dataframe, **kwargs):
         self.render_header = kwargs["render_header"]
 
@@ -161,6 +164,7 @@ class ConsoleRenderer:
             return result.encode("utf-8")
 
     # pylint: disable=W1401
+    @annotate("HatchetConsoleRenderer.render_preamble")
     def render_preamble(self):
         lines = [
             r"    __          __       __         __ ",
@@ -174,6 +178,7 @@ class ConsoleRenderer:
 
         return "\n".join(lines)
 
+    @annotate("HatchetConsoleRenderer.render_legend")
     def render_legend(self):
         def render_label(index, low, high):
             metric_range = self.max_metric - self.min_metric
@@ -247,6 +252,7 @@ class ConsoleRenderer:
 
         return legend
 
+    @annotate("HatchetConsoleRenderer.render_frame")
     def render_frame(self, node, dataframe, indent="", child_indent=""):
         node_depth = node._depth
         if node_depth < self.depth:
@@ -288,8 +294,8 @@ class ConsoleRenderer:
                         "none": "",
                         "constant": "\U00002192",
                         "phased": "\U00002933",
-                        "dynamic": "\U000021DD",
-                        "sporadic": "\U0000219D",
+                        "dynamic": "\U000021dd",
+                        "sporadic": "\U0000219d",
                     }
                     pattern_metric = dataframe.loc[df_index, self.annotation_column]
                     annotation_content = self.temporal_symbols[pattern_metric]

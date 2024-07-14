@@ -15,6 +15,7 @@ import warnings
 
 from .errors import InvalidQueryPath, InvalidQueryFilter, RedundantQueryFilterWarning
 from .query import Query
+from ..util.perf_measure import annotate
 
 
 # PEG grammar for the String-based dialect
@@ -65,6 +66,7 @@ def cname(obj):
     return obj.__class__.__name__
 
 
+@annotate()
 def filter_check_types(type_check, df_row, filt_lambda):
     """Utility function used in String-based predicates
        to make sure the node data used in the actual boolean predicate
@@ -97,6 +99,7 @@ def filter_check_types(type_check, df_row, filt_lambda):
 class StringQuery(Query):
     """Class for representing and parsing queries using the String-based dialect."""
 
+    @annotate("StringQuery.__init__")
     def __init__(self, cypher_query, multi_index_mode="off"):
         """Builds a new StringQuery object representing a query in the String-based dialect.
 
@@ -128,6 +131,7 @@ class StringQuery(Query):
         self._build_lambdas()
         self._build_query()
 
+    @annotate("StringQuery._build_query")
     def _build_query(self):
         """Builds the entire query using 'match' and 'rel' using
         the pre-parsed quantifiers and predicates.
@@ -149,6 +153,7 @@ class StringQuery(Query):
                 else:
                     self.rel(quantifier=wcard, predicate=eval(filt_str))
 
+    @annotate("StringQuery._build_lambdas")
     def _build_lambdas(self):
         """Constructs the final predicate lambdas from the pre-parsed
         predicate information.
@@ -175,6 +180,7 @@ class StringQuery(Query):
                 )
                 self.lambda_filters[i] = bool_expr
 
+    @annotate("StringQuery._parse_path")
     def _parse_path(self, path_obj):
         """Parses the MATCH statement of a String-based query."""
         nodes = path_obj.path.nodes
@@ -188,6 +194,7 @@ class StringQuery(Query):
                 self.wcard_pos[n.name] = idx
             idx += 1
 
+    @annotate("StringQuery._parse_conditions")
     def _parse_conditions(self, cond_expr):
         """Top level function for parsing the WHERE statement of
         a String-based query.
@@ -722,9 +729,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -747,9 +752,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -798,9 +801,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -823,9 +824,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -872,9 +871,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -897,9 +894,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -941,9 +936,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -966,9 +959,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1015,9 +1006,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1040,9 +1029,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1084,9 +1071,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1109,9 +1094,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1158,9 +1141,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1183,9 +1164,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1227,9 +1206,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1252,9 +1229,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1301,9 +1276,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1326,9 +1299,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1370,9 +1341,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1395,9 +1364,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1687,6 +1654,7 @@ class StringQuery(Query):
         ]
 
 
+@annotate()
 def parse_string_dialect(query_str, multi_index_mode="off"):
     """Parse all types of String-based queries, including multi-queries that leverage
     the curly brace delimiters.

@@ -12,11 +12,13 @@ from ..node import Node
 from ..graph import Graph
 from ..frame import Frame
 from ..util.timer import Timer
+from ..util.perf_measure import annotate
 
 
 class TimemoryReader:
     """Read in timemory JSON output"""
 
+    @annotate("TimemoryReader.__init__")
     def __init__(self, input, select=None, **_kwargs):
         """Arguments:
         input (str or file-stream or dict or None):
@@ -77,6 +79,7 @@ class TimemoryReader:
         else:
             raise TypeError("select must be None or list of string")
 
+    @annotate("TimemoryReader.create_graph")
     def create_graph(self):
         """Create graph and dataframe"""
         list_roots = []
@@ -538,7 +541,6 @@ class TimemoryReader:
         if self.multiple_ranks or self.multiple_threads:
             dataframe = dataframe.unstack()
             for idx, row in dataframe.iterrows():
-
                 # There is always a valid name for an index.
                 # Take that valid name and assign to other ranks/rows.
                 name = row["name"][row["name"].first_valid_index()]
@@ -564,6 +566,7 @@ class TimemoryReader:
             graph, dataframe, exc_metrics, inc_metrics, self.default_metric
         )
 
+    @annotate("TimemoryReader.read")
     def read(self):
         """Read timemory json."""
 

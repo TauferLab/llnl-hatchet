@@ -11,11 +11,13 @@ from .query import Query
 from .string_dialect import parse_string_dialect
 from .object_dialect import ObjectQuery
 from .errors import BadNumberNaryQueryArgs
+from ..util.perf_measure import annotate
 
 
 class CompoundQuery(object):
     """Base class for all types of compound queries."""
 
+    @annotate("CompoundQuery.__init__")
     def __init__(self, *queries):
         """Collect the provided queries into a list, constructing ObjectQuery and StringQuery objects as needed.
 
@@ -51,6 +53,7 @@ class ConjunctionQuery(CompoundQuery):
     using set conjunction.
     """
 
+    @annotate("ConjunctionQuery.__init__")
     def __init__(self, *queries):
         """Create the ConjunctionQuery.
 
@@ -66,6 +69,7 @@ class ConjunctionQuery(CompoundQuery):
                 "ConjunctionQuery requires 2 or more subqueries"
             )
 
+    @annotate("ConjunctionQuery._apply_op_to_results")
     def _apply_op_to_results(self, subquery_results, graph):
         """Combines the results of the subqueries using set conjunction.
 
@@ -85,6 +89,7 @@ class DisjunctionQuery(CompoundQuery):
     using set disjunction.
     """
 
+    @annotate("DisjunctionQuery.__init__")
     def __init__(self, *queries):
         """Create the DisjunctionQuery.
 
@@ -100,6 +105,7 @@ class DisjunctionQuery(CompoundQuery):
                 "DisjunctionQuery requires 2 or more subqueries"
             )
 
+    @annotate("DisjunctionQuery._apply_op_to_results")
     def _apply_op_to_results(self, subquery_results, graph):
         """Combines the results of the subqueries using set disjunction.
 
@@ -119,6 +125,7 @@ class ExclusiveDisjunctionQuery(CompoundQuery):
     using exclusive set disjunction.
     """
 
+    @annotate("ExclusiveDisjunctionQuery.__init__")
     def __init__(self, *queries):
         """Create the ExclusiveDisjunctionQuery.
 
@@ -132,6 +139,7 @@ class ExclusiveDisjunctionQuery(CompoundQuery):
         if len(self.subqueries) < 2:
             raise BadNumberNaryQueryArgs("XorQuery requires 2 or more subqueries")
 
+    @annotate("ExclusiveDisjunctionQuery._apply_op_to_results")
     def _apply_op_to_results(self, subquery_results, graph):
         """Combines the results of the subqueries using exclusive set disjunction.
 
@@ -153,6 +161,7 @@ class NegationQuery(CompoundQuery):
     its single subquery.
     """
 
+    @annotate("NegationQuery.__init__")
     def __init__(self, *queries):
         """Create the NegationQuery.
 
@@ -166,6 +175,7 @@ class NegationQuery(CompoundQuery):
         if len(self.subqueries) != 1:
             raise BadNumberNaryQueryArgs("NotQuery requires exactly 1 subquery")
 
+    @annotate("NegationQuery._apply_op_to_results")
     def _apply_op_to_results(self, subquery_results, graph):
         """Inverts the results of the subquery so that all nodes not in the results are returned.
 
