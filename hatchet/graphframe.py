@@ -710,8 +710,23 @@ class GraphFrame:
                 (default: in place)
             function (callable): associative operator used to sum
                 elements, sum of an all-NA series is NaN (default: sum(min_count=1))
-        """
-        out_columns = self._init_sum_columns(columns, out_columns)
+        """ 
+        # out_columns = self._init_sum_columns(columns, out_columns)
+
+        row_idx_map = {}
+
+        def _subtree_sum_predicate(row):
+            row_idx = row.name
+            node = row_idx[0] if isinstance(row_idx, (tuple, list)) else row_idx
+            out_col_entries = {}
+            if len(node.children) == 0:
+                for in_col, out_col in zip(columns, out_columns):
+                    out_col_entries[out_col] = row[in_col]
+            else:
+                sum_idx = row_idx_map[row_idx]
+                for in_col, out_col in zip(columns, out_columns):
+                    out_col_entries[out_col] = function(self.dataframe.loc[sum_idx, in_col])
+            return pd.Series(data=out_col_entries, name=row_idx)
 
         # sum over the output columns
         for node in self.graph.traverse(order="post"):
@@ -727,7 +742,7 @@ class GraphFrame:
 
                 if is_multi_index:
                     for rank_thread in self.dataframe.loc[
-                        (node), out_columns
+                        (node), columns
                     ].index.unique():
                         # rank_thread is either rank or a tuple of (rank, thread).
                         # We check if rank_thread is a tuple and if it is, we
@@ -739,16 +754,20 @@ class GraphFrame:
                         else:
                             df_index1 = (node, rank_thread)
                             df_index2 = ([node] + node.children, rank_thread)
+                        row_idx_map[df_index1] = df_index2
 
-                        for col in out_columns:
-                            self.dataframe.loc[df_index1, col] = function(
-                                self.dataframe.loc[df_index2, col]
-                            )
+                        # for col in out_columns:
+                        #     self.dataframe.loc[df_index1, col] = function(
+                        #         self.dataframe.loc[df_index2, col]
+                        #     )
                 else:
-                    for col in out_columns:
-                        self.dataframe.loc[node, col] = function(
-                            self.dataframe.loc[[node] + node.children, col]
-                        )
+                    row_idx_map[node] = [node] + node.children
+                    # for col in out_columns:
+                    #     self.dataframe.loc[node, col] = function(
+                    #         self.dataframe.loc[[node] + node.children, col]
+                    #     )
+        new_cols = self.dataframe.apply(_subtree_sum_predicate, axis="columns")
+        self.dataframe = pd.concat([self.dataframe, new_cols], axis="columns")
 
     def subgraph_sum(
         self, columns, out_columns=None, function=lambda x: x.sum(min_count=1)
@@ -775,7 +794,16 @@ class GraphFrame:
             self.subtree_sum(columns, out_columns, function)
             return
 
-        out_columns = self._init_sum_columns(columns, out_columns)
+        # out_columns = self._init_sum_columns(columns, out_columns)
+        row_idx_map = {}
+        def _subgraph_sum_predicate(row):
+            row_idx = row.name
+            sum_idx = row_idx_map[row_idx]
+            out_col_entries = {}
+            for in_col, out_col in zip(columns, out_columns):
+                out_col_entries[out_col] = function(self.dataframe.loc[sum_idx, in_col])
+            return pd.Series(data=out_col_entries, name=row_idx)
+
         for node in self.graph.traverse():
             subgraph_nodes = list(node.traverse())
             # TODO: need a better way of aggregating inclusive metrics when
@@ -789,7 +817,7 @@ class GraphFrame:
 
             if is_multi_index:
                 for rank_thread in self.dataframe.loc[
-                    (node), out_columns
+                    (node), columns
                 ].index.unique():
                     # rank_thread is either rank or a tuple of (rank, thread).
                     # We check if rank_thread is a tuple and if it is, we
@@ -801,17 +829,21 @@ class GraphFrame:
                     else:
                         df_index1 = (node, rank_thread)
                         df_index2 = (subgraph_nodes, rank_thread)
+                    row_idx_map[df_index1] = df_index2
 
-                    for col in out_columns:
-                        self.dataframe.loc[df_index1, col] = [
-                            function(self.dataframe.loc[df_index2, col])
-                        ]
+                    # for col in out_columns:
+                    #     self.dataframe.loc[df_index1, col] = [
+                    #         function(self.dataframe.loc[df_index2, col])
+                    #     ]
             else:
                 # TODO: if you take the list constructor away from the
                 # TODO: assignment below, this assignment gives NaNs. Why?
-                self.dataframe.loc[(node), out_columns] = list(
-                    function(self.dataframe.loc[(subgraph_nodes), columns])
-                )
+                # self.dataframe.loc[(node), out_columns] = list(
+                #     function(self.dataframe.loc[(subgraph_nodes), columns])
+                # )
+                row_idx_map[node] = subgraph_nodes
+        new_cols = self.dataframe.apply(_subgraph_sum_predicate, axis="columns")
+        self.dataframe = pd.concat([self.dataframe, new_cols], axis="columns")
 
     def generate_exclusive_columns(self, inc_metrics=None):
         """Generates exclusive metrics from available inclusive metrics.
