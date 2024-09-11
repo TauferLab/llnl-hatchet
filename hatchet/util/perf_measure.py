@@ -4,36 +4,31 @@
 # SPDX-License-Identifier: MIT
 
 import os
-
-try:
-    from pycaliper import annotate_function
-    from pycaliper.instrumentation import begin_region, end_region
-
-    _PYCALIPER_AVAILABLE = True
-except Exception:
-    _PYCALIPER_AVAILABLE = False
-
-try:
-    import perfflowaspect.aspect
-
-    _PERFFLOWASPECT_AVAILABLE = True
-except Exception:
-    _PERFFLOWASPECT_AVAILABLE = False
-
-
-def _validate_perf_plugin(plugin_name):
-    if plugin_name.lower() == "caliper" and _PYCALIPER_AVAILABLE:
-        return "caliper"
-    elif plugin_name.lower() == "perfflowaspect" and _PERFFLOWASPECT_AVAILABLE:
-        return "perfflowaspect"
-    return "none"
-
-
-if "HATCHET_PERF_PLUGIN" in os.environ:
-    _HATCHET_PERF_PLUGIN = _validate_perf_plugin(os.environ["HATCHET_PERF_PLUGIN"])
-    _HATCHET_PERF_ENABLED = _HATCHET_PERF_PLUGIN != "none"
-else:
-    _HATCHET_PERF_ENABLED = False
+    
+HATCHET_PERF_ENV_VAR = "HATCHET_PERF_PLUGIN"
+    
+_HATCHET_PERF_PLUGIN = "none"
+_HATCHET_PERF_ENABLED = False
+if HATCHET_PERF_ENV_VAR in os.environ:
+    if os.environ[HATCHET_PERF_ENV_VAR].lower() == "caliper":
+        try:
+            from pycaliper import annotate_function
+            from pycaliper.instrumentation import begin_region, end_region
+            
+            _HATCHET_PERF_PLUGIN = "caliper"
+            _HATCHET_PERF_ENABLED = True
+        except Exception:
+            print("User requested Caliper annotations, but could not import Caliper")
+    elif os.environ[HATCHET_PERF_ENV_VAR].lower() == "perfflowaspect":
+        try:
+            import perfflowaspect.aspect
+            
+            _HATCHET_PERF_PLUGIN = "perfflowaspect"
+            _HATCHET_PERF_ENABLED = True
+        except Exception:
+            print("User requested PerfFlow Aspect annotations, but could not import Caliper")
+    else:
+        print("'{}' is an invalid value for {}. Not enabling performance annotations".format(os.environ[HATCHET_PERF_ENV_VAR], HATCHET_PERF_ENV_VAR))
 
 
 def annotate(name=None, fmt=None):
