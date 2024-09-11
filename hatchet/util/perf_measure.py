@@ -27,7 +27,7 @@ def _validate_perf_plugin(plugin_name):
     if plugin_name.lower() == "caliper" and _PYCALIPER_AVAILABLE:
         return "caliper"
     elif plugin_name.lower() == "perfflowaspect" and _PYCALIPER_AVAILABLE:
-       return "perfflowaspect"
+        return "perfflowaspect"
     return "none"
 
 
