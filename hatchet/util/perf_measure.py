@@ -22,11 +22,9 @@ except Exception:
 
 
 def _validate_perf_plugin(plugin_name):
-    print("Perf Plugin =", plugin_name)
-    print("Caliper is available?", _PYCALIPER_AVAILABLE)
     if plugin_name.lower() == "caliper" and _PYCALIPER_AVAILABLE:
         return "caliper"
-    elif plugin_name.lower() == "perfflowaspect" and _PYCALIPER_AVAILABLE:
+    elif plugin_name.lower() == "perfflowaspect" and _PERFFLOWASPECT_AVAILABLE:
         return "perfflowaspect"
     return "none"
 
