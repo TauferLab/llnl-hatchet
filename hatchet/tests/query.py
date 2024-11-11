@@ -513,7 +513,9 @@ def test_apply_indices(calc_pi_hpct_db):
     matches = list(set().union(*matches))
     query = ObjectQuery(path)
     engine = QueryEngine()
-    assert sorted(engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="all")) == sorted(matches)
+    assert sorted(
+        engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="all")
+    ) == sorted(matches)
 
     gf.drop_index_levels()
     assert engine.apply(query, gf.graph, gf.dataframe) == matches
@@ -598,11 +600,16 @@ def test_object_dialect_depth_index_levels(calc_pi_hpct_db):
         [root.children[0].children[1]],
     ]
     matches = list(set().union(*matches))
-    assert sorted(engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="all")) == sorted(matches)
+    assert sorted(
+        engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="all")
+    ) == sorted(matches)
 
     query = ObjectQuery([("*", {"depth": 0})])
     matches = [root]
-    assert engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="all") == matches
+    assert (
+        engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="all")
+        == matches
+    )
 
     with pytest.raises(InvalidQueryFilter):
         query = ObjectQuery([{"depth": "hello"}])
@@ -623,11 +630,16 @@ def test_object_dialect_node_id_index_levels(calc_pi_hpct_db):
         [root.children[0].children[0]],
     ]
     matches = list(set().union(*matches))
-    assert sorted(engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="all")) == sorted(matches)
+    assert sorted(
+        engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="all")
+    ) == sorted(matches)
 
     query = ObjectQuery([("*", {"node_id": 0})])
     matches = [root]
-    assert engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="all") == matches
+    assert (
+        engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="all")
+        == matches
+    )
 
     with pytest.raises(InvalidQueryFilter):
         query = ObjectQuery([{"node_id": "hello"}])
@@ -1281,9 +1293,7 @@ def test_leaf_query(small_mock2):
 def test_object_dialect_all_mode(tau_profile_dir):
     gf = GraphFrame.from_tau(tau_profile_dir)
     engine = QueryEngine()
-    query = ObjectQuery(
-        [".", ("+", {"time (inc)": ">= 17983.0"})]
-    )
+    query = ObjectQuery([".", ("+", {"time (inc)": ">= 17983.0"})])
     roots = gf.graph.roots
     matches = [
         roots[0],
@@ -1291,7 +1301,9 @@ def test_object_dialect_all_mode(tau_profile_dir):
         roots[0].children[6].children[1],
         roots[0].children[0],
     ]
-    assert sorted(engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="all")) == sorted(matches)
+    assert sorted(
+        engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="all")
+    ) == sorted(matches)
 
 
 def test_string_dialect_all_mode(tau_profile_dir):
@@ -1309,7 +1321,9 @@ def test_string_dialect_all_mode(tau_profile_dir):
         roots[0].children[6].children[1],
         roots[0].children[0],
     ]
-    assert sorted(engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="all")) == sorted(matches)
+    assert sorted(
+        engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="all")
+    ) == sorted(matches)
 
 
 def test_object_dialect_any_mode(tau_profile_dir):
@@ -1321,7 +1335,9 @@ def test_object_dialect_any_mode(tau_profile_dir):
         roots[0].children[2],
         roots[0].children[6].children[3],
     ]
-    assert sorted(engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="any")) == sorted(matches)
+    assert sorted(
+        engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="any")
+    ) == sorted(matches)
 
 
 def test_string_dialect_any_mode(tau_profile_dir):
@@ -1337,7 +1353,9 @@ def test_string_dialect_any_mode(tau_profile_dir):
         roots[0].children[2],
         roots[0].children[6].children[3],
     ]
-    assert sorted(engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="any")) == sorted(matches)
+    assert sorted(
+        engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="any")
+    ) == sorted(matches)
 
 
 def test_predicate_row_aggregator_assertion_error(tau_profile_dir):
@@ -1346,8 +1364,6 @@ def test_predicate_row_aggregator_assertion_error(tau_profile_dir):
     query = ObjectQuery([".", ("*", {"name": "test"})])
     with pytest.raises(ValueError):
         engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="foo")
-    query = ObjectQuery(
-        [".", ("*", {"time (inc)": "> 17983.0"})]
-    )
+    query = ObjectQuery([".", ("*", {"time (inc)": "> 17983.0"})])
     with pytest.raises(ValueError):
         engine.apply(query, gf.graph, gf.dataframe, predicate_row_aggregator="off")
