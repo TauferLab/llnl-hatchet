@@ -107,9 +107,9 @@ class StringQuery(Query):
             super(StringQuery, self).__init__()
         else:
             super().__init__()
-        model = None
+        self.model = None
         try:
-            model = cypher_query_mm.model_from_str(cypher_query)
+            self.model = cypher_query_mm.model_from_str(cypher_query)
         except TextXError as e:
             # TODO Change to a "raise-from" expression when Python 2.7 support is dropped
             raise InvalidQueryPath(
@@ -119,13 +119,16 @@ class StringQuery(Query):
             )
         self.wcards = []
         self.wcard_pos = {}
-        self._parse_path(model.path_expr)
+        self.default_aggregator = "all"
+
+    def parse(self, dframe):
+        has_multi_index = isinstance(dframe.index, pd.MultiIndex)
+        self._parse_path(self.model.path_expr)
         self.filters = [[] for _ in self.wcards]
-        self._parse_conditions(model.cond_expr)
+        self._parse_conditions(self.model.cond_expr, has_multi_index)
         self.lambda_filters = [None for _ in self.wcards]
         self._build_lambdas()
         self._build_query()
-        self.default_aggregator = "all"
 
     def _build_query(self):
         """Builds the entire query using 'match' and 'rel' using
@@ -187,7 +190,7 @@ class StringQuery(Query):
                 self.wcard_pos[n.name] = idx
             idx += 1
 
-    def _parse_conditions(self, cond_expr):
+    def _parse_conditions(self, cond_expr, has_multi_index):
         """Top level function for parsing the WHERE statement of
         a String-based query.
         """
@@ -195,9 +198,9 @@ class StringQuery(Query):
         for cond in conditions:
             converted_condition = None
             if self._is_unary_cond(cond):
-                converted_condition = self._parse_unary_cond(cond)
+                converted_condition = self._parse_unary_cond(cond, has_multi_index)
             elif self._is_binary_cond(cond):
-                converted_condition = self._parse_binary_cond(cond)
+                converted_condition = self._parse_binary_cond(cond, has_multi_index)
             else:
                 raise RuntimeError("Bad Condition")
             self.filters[self.wcard_pos[converted_condition[1]]].append(
@@ -225,52 +228,67 @@ class StringQuery(Query):
             return True
         return False
 
-    def _parse_binary_cond(self, obj):
+    def _parse_binary_cond(self, obj, has_multi_index):
         """Top level function for parsing binary predicates."""
         if cname(obj) == "AndCond":
-            return self._parse_and_cond(obj)
+            return self._parse_and_cond(obj, has_multi_index)
         if cname(obj) == "OrCond":
-            return self._parse_or_cond(obj)
+            return self._parse_or_cond(obj, has_multi_index)
         raise RuntimeError("Bad Binary Condition")
 
-    def _parse_or_cond(self, obj):
+    def _parse_or_cond(self, obj, has_multi_index):
         """Top level function for parsing predicates combined with logical OR."""
-        converted_subcond = self._parse_unary_cond(obj.subcond)
+        converted_subcond = self._parse_unary_cond(obj.subcond, has_multi_index)
         converted_subcond[0] = "or"
         return converted_subcond
 
-    def _parse_and_cond(self, obj):
+    def _parse_and_cond(self, obj, has_multi_index):
         """Top level function for parsing predicates combined with logical AND."""
-        converted_subcond = self._parse_unary_cond(obj.subcond)
+        converted_subcond = self._parse_unary_cond(obj.subcond, has_multi_index)
         converted_subcond[0] = "and"
         return converted_subcond
 
-    def _parse_unary_cond(self, obj):
+    def _parse_unary_cond(self, obj, has_multi_index):
         """Top level function for parsing unary predicates."""
         if cname(obj) == "NotCond":
-            return self._parse_not_cond(obj)
-        return self._parse_single_cond(obj)
+            return self._parse_not_cond(obj, has_multi_index)
+        return self._parse_single_cond(obj, has_multi_index)
 
-    def _parse_not_cond(self, obj):
+    def _parse_not_cond(self, obj, has_multi_index):
         """Parse predicates containing the logical NOT operator."""
-        converted_subcond = self._parse_single_cond(obj.subcond)
+        converted_subcond = self._parse_single_cond(obj.subcond, has_multi_index)
         converted_subcond[2] = "not {}".format(converted_subcond[2])
         return converted_subcond
 
-    def _parse_single_cond(self, obj):
+    def _run_method_based_on_multi_index(self, method_name, obj, has_multi_index):
+        real_method_name = method_name
+        if has_multi_index:
+            real_method_name = method_name + "_multi_idx"
+        method = eval("StringQuery.{}".format(real_method_name))
+        return method(self, obj)
+
+    def _parse_single_cond(self, obj, has_multi_index):
         """Top level function for parsing individual numeric or string predicates."""
         if self._is_str_cond(obj):
-            return self._parse_str(obj)
+            return self._parse_str(obj, has_multi_index)
         if self._is_num_cond(obj):
-            return self._parse_num(obj)
+            return self._parse_num(obj, has_multi_index)
         if cname(obj) == "NoneCond":
-            return self._parse_none(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_none", obj, has_multi_index
+            )
         if cname(obj) == "NotNoneCond":
-            return self._parse_not_none(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_not_none", obj, has_multi_index
+            )
         if cname(obj) == "LeafCond":
-            return self._parse_leaf(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_leaf", obj, has_multi_index
+            )
         if cname(obj) == "NotLeafCond":
-            return self._parse_not_leaf(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_not_leaf", obj, has_multi_index
+            )
         raise RuntimeError("Bad Single Condition")
 
     def _parse_none(self, obj):
@@ -293,6 +311,32 @@ class StringQuery(Query):
             None,
             obj.name,
             "df_row[{}] is None".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+            None,
+        ]
+
+    def _parse_none_multi_idx(self, obj):
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
+            return [
+                None,
+                obj.name,
+                "df_row.index.get_level_values('node')[0]._depth is None",
+                None,
+            ]
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "node_id":
+            return [
+                None,
+                obj.name,
+                "df_row.index.get_level_values('node')[0]._hatchet_nid is None",
+                None,
+            ]
+        return [
+            None,
+            obj.name,
+            "df_row[{}].apply(lambda elem: elem is None)".format(
                 str(tuple(obj.prop.ids))
                 if len(obj.prop.ids) > 1
                 else "'{}'".format(obj.prop.ids[0])
@@ -327,6 +371,32 @@ class StringQuery(Query):
             None,
         ]
 
+    def _parse_not_none_multi_idx(self, obj):
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
+            return [
+                None,
+                obj.name,
+                "df_row.index.get_level_values('node')[0]._depth is not None",
+                None,
+            ]
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "node_id":
+            return [
+                None,
+                obj.name,
+                "df_row.index.get_level_values('node')[0]._hatchet_nid is not None",
+                None,
+            ]
+        return [
+            None,
+            obj.name,
+            "df_row[{}].apply(lambda elem: elem is not None)".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+            None,
+        ]
+
     def _parse_leaf(self, obj):
         """Parses 'node IS LEAF'."""
         return [
@@ -336,12 +406,28 @@ class StringQuery(Query):
             None,
         ]
 
+    def _parse_leaf_multi_idx(self, obj):
+        return [
+            None,
+            obj.name,
+            "len(df_row.index.get_level_values('node')[0].children) == 0",
+            None,
+        ]
+
     def _parse_not_leaf(self, obj):
         """Parses 'node IS NOT LEAF'."""
         return [
             None,
             obj.name,
             "len(df_row.name.children) > 0",
+            None,
+        ]
+
+    def _parse_not_leaf_multi_idx(self, obj):
+        return [
+            None,
+            obj.name,
+            "len(df_row.index.get_level_values('node')[0].children) > 0",
             None,
         ]
 
@@ -373,20 +459,30 @@ class StringQuery(Query):
             return True
         return False
 
-    def _parse_str(self, obj):
+    def _parse_str(self, obj, has_multi_index):
         """Function that redirects processing of string predicates
         to the correct function.
         """
         if cname(obj) == "StringEq":
-            return self._parse_str_eq(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_str_eq", obj, has_multi_index
+            )
         if cname(obj) == "StringStartsWith":
-            return self._parse_str_starts_with(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_str_starts_with", obj, has_multi_index
+            )
         if cname(obj) == "StringEndsWith":
-            return self._parse_str_ends_with(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_str_ends_with", obj, has_multi_index
+            )
         if cname(obj) == "StringContains":
-            return self._parse_str_contains(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_str_contains", obj, has_multi_index
+            )
         if cname(obj) == "StringMatch":
-            return self._parse_str_match(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_str_match", obj, has_multi_index
+            )
         raise RuntimeError("Bad String Op Class")
 
     def _parse_str_eq(self, obj):
@@ -403,6 +499,25 @@ class StringQuery(Query):
                 obj.val,
             ),
             "isinstance(df_row[{}], str)".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+        ]
+
+    def _parse_str_eq_multi_idx(self, obj):
+        return [
+            None,
+            obj.name,
+            'df_row[{}].apply(lambda elem: elem == "{}")'.format(
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
+                obj.val,
+            ),
+            "is_string_dtype(df_row[{}])".format(
                 str(tuple(obj.prop.ids))
                 if len(obj.prop.ids) > 1
                 else "'{}'".format(obj.prop.ids[0])
@@ -429,6 +544,25 @@ class StringQuery(Query):
             ),
         ]
 
+    def _parse_str_starts_with_multi_idx(self, obj):
+        return [
+            None,
+            obj.name,
+            'df_row[{}].apply(lambda elem: elem.startswith("{}"))'.format(
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
+                obj.val,
+            ),
+            "is_string_dtype(df_row[{}])".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+        ]
+
     def _parse_str_ends_with(self, obj):
         """Processes string 'endswith' predicates."""
         return [
@@ -443,6 +577,25 @@ class StringQuery(Query):
                 obj.val,
             ),
             "isinstance(df_row[{}], str)".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+        ]
+
+    def _parse_str_ends_with_multi_idx(self, obj):
+        return [
+            None,
+            obj.name,
+            'df_row[{}].apply(lambda elem: elem.endswith("{}"))'.format(
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
+                obj.val,
+            ),
+            "is_string_dtype(df_row[{}])".format(
                 str(tuple(obj.prop.ids))
                 if len(obj.prop.ids) > 1
                 else "'{}'".format(obj.prop.ids[0])
@@ -469,6 +622,25 @@ class StringQuery(Query):
             ),
         ]
 
+    def _parse_str_contains_multi_idx(self, obj):
+        return [
+            None,
+            obj.name,
+            'df_row[{}].apply(lambda elem: "{}" in elem)'.format(
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
+                obj.val,
+            ),
+            "is_string_dtype(df_row[{}])".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+        ]
+
     def _parse_str_match(self, obj):
         """Processes string regex match predicates."""
         return [
@@ -489,28 +661,65 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num(self, obj):
+    def _parse_str_match_multi_idx(self, obj):
+        return [
+            None,
+            obj.name,
+            'df_row[{}].apply(lambda elem: re.match("{}", elem) is not None)'.format(
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
+                obj.val,
+            ),
+            "is_string_dtype(df_row[{}])".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+        ]
+
+    def _parse_num(self, obj, has_multi_index):
         """Function that redirects processing of numeric predicates
         to the correct function.
         """
         if cname(obj) == "NumEq":
-            return self._parse_num_eq(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_num_eq", obj, has_multi_index
+            )
         if cname(obj) == "NumLt":
-            return self._parse_num_lt(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_num_lt", obj, has_multi_index
+            )
         if cname(obj) == "NumGt":
-            return self._parse_num_gt(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_num_gt", obj, has_multi_index
+            )
         if cname(obj) == "NumLte":
-            return self._parse_num_lte(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_num_lte", obj, has_multi_index
+            )
         if cname(obj) == "NumGte":
-            return self._parse_num_gte(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_num_gte", obj, has_multi_index
+            )
         if cname(obj) == "NumNan":
-            return self._parse_num_nan(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_num_nan", obj, has_multi_index
+            )
         if cname(obj) == "NumNotNan":
-            return self._parse_num_not_nan(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_num_not_nan", obj, has_multi_index
+            )
         if cname(obj) == "NumInf":
-            return self._parse_num_inf(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_num_inf", obj, has_multi_index
+            )
         if cname(obj) == "NumNotInf":
-            return self._parse_num_not_inf(obj)
+            return self._run_method_based_on_multi_index(
+                "_parse_num_not_inf", obj, has_multi_index
+            )
         raise RuntimeError("Bad Number Op Class")
 
     def _parse_num_eq(self, obj):
@@ -530,9 +739,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -555,9 +762,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -590,6 +795,80 @@ class StringQuery(Query):
             ),
         ]
 
+    def _parse_num_eq_multi_idx(self, obj):
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
+            if obj.val == -1:
+                return [
+                    None,
+                    obj.name,
+                    "len(df_row.index.get_level_values('node')[0].children) == 0",
+                    None,
+                ]
+            elif obj.val < 0:
+                warnings.warn(
+                    """
+                    The 'depth' property of a Node is strictly non-negative.
+                    This condition will always be false.
+                    The statement that triggered this warning is:
+                    {}
+                    """.format(obj),
+                    RedundantQueryFilterWarning,
+                )
+                return [
+                    None,
+                    obj.name,
+                    "False",
+                    "isinstance(df_row.index.get_level_values('node')[0]._depth, Real)",
+                ]
+            return [
+                None,
+                obj.name,
+                "df_row.index.get_level_values('node')[0]._depth == {}".format(obj.val),
+                "isinstance(df_row.index.get_level_values('node')[0]._depth, Real)",
+            ]
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "node_id":
+            if obj.val < 0:
+                warnings.warn(
+                    """
+                    The 'node_id' property of a Node is strictly non-negative.
+                    This condition will always be false.
+                    The statement that triggered this warning is:
+                    {}
+                    """.format(obj),
+                    RedundantQueryFilterWarning,
+                )
+                return [
+                    None,
+                    obj.name,
+                    "False",
+                    "isinstance(df_row.index.get_level_values('node')[0]._hatchet_nid, Real)",
+                ]
+            return [
+                None,
+                obj.name,
+                "df_row.index.get_level_values('node')[0]._hatchet_nid == {}".format(
+                    obj.val
+                ),
+                "isinstance(df_row.index.get_level_values('node')[0]._hatchet_nid, Real)",
+            ]
+        return [
+            None,
+            obj.name,
+            "df_row[{}].apply(lambda elem: elem == {})".format(
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
+                obj.val,
+            ),
+            "is_numeric_dtype(df_row[{}])".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+        ]
+
     def _parse_num_lt(self, obj):
         """Processes numeric less-than predicates."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
@@ -600,9 +879,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -625,9 +902,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -660,6 +935,73 @@ class StringQuery(Query):
             ),
         ]
 
+    def _parse_num_lt_multi_idx(self, obj):
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
+            if obj.val < 0:
+                warnings.warn(
+                    """
+                    The 'depth' property of a Node is strictly non-negative.
+                    This condition will always be false.
+                    The statement that triggered this warning is:
+                    {}
+                    """.format(obj),
+                    RedundantQueryFilterWarning,
+                )
+                return [
+                    None,
+                    obj.name,
+                    "False",
+                    "isinstance(df_row.index.get_level_values('node')[0]._depth, Real)",
+                ]
+            return [
+                None,
+                obj.name,
+                "df_row.index.get_level_values('node')[0]._depth < {}".format(obj.val),
+                "isinstance(df_row.index.get_level_values('node')[0]._depth, Real)",
+            ]
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "node_id":
+            if obj.val < 0:
+                warnings.warn(
+                    """
+                    The 'node_id' property of a Node is strictly non-negative.
+                    This condition will always be false.
+                    The statement that triggered this warning is:
+                    {}
+                    """.format(obj),
+                    RedundantQueryFilterWarning,
+                )
+                return [
+                    None,
+                    obj.name,
+                    "False",
+                    "isinstance(df_row.index.get_level_values('node')[0]._hatchet_nid, Real)",
+                ]
+            return [
+                None,
+                obj.name,
+                "df_row.index.get_level_values('node')[0]._hatchet_nid < {}".format(
+                    obj.val
+                ),
+                "isinstance(df_row.index.get_level_values('node')[0]._hatchet_nid, Real)",
+            ]
+        return [
+            None,
+            obj.name,
+            "df_row[{}].apply(lambda elem: elem < {})".format(
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
+                obj.val,
+            ),
+            "is_numeric_dtype(df_row[{}])".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+        ]
+
     def _parse_num_gt(self, obj):
         """Processes numeric greater-than predicates."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
@@ -670,9 +1012,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -695,9 +1035,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -730,6 +1068,73 @@ class StringQuery(Query):
             ),
         ]
 
+    def _parse_num_gt_multi_idx(self, obj):
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
+            if obj.val < 0:
+                warnings.warn(
+                    """
+                    The 'depth' property of a Node is strictly non-negative.
+                    This condition will always be true.
+                    The statement that triggered this warning is:
+                    {}
+                    """.format(obj),
+                    RedundantQueryFilterWarning,
+                )
+                return [
+                    None,
+                    obj.name,
+                    "True",
+                    "isinstance(df_row.index.get_level_values('node')[0]._depth, Real)",
+                ]
+            return [
+                None,
+                obj.name,
+                "df_row.index.get_level_values('node')[0]._depth > {}".format(obj.val),
+                "isinstance(df_row.index.get_level_values('node')[0]._depth, Real)",
+            ]
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "node_id":
+            if obj.val < 0:
+                warnings.warn(
+                    """
+                    The 'node_id' property of a Node is strictly non-negative.
+                    This condition will always be true.
+                    The statement that triggered this warning is:
+                    {}
+                    """.format(obj),
+                    RedundantQueryFilterWarning,
+                )
+                return [
+                    None,
+                    obj.name,
+                    "True",
+                    "isinstance(df_row.index.get_level_values('node')[0]._hatchet_nid, Real)",
+                ]
+            return [
+                None,
+                obj.name,
+                "df_row.index.get_level_values('node')[0]._hatchet_nid > {}".format(
+                    obj.val
+                ),
+                "isinstance(df_row.index.get_level_values('node')[0]._hatchet_nid, Real)",
+            ]
+        return [
+            None,
+            obj.name,
+            "df_row[{}].apply(lambda elem: elem > {})".format(
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
+                obj.val,
+            ),
+            "is_numeric_dtype(df_row[{}])".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+        ]
+
     def _parse_num_lte(self, obj):
         """Processes numeric less-than-or-equal-to predicates."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
@@ -740,9 +1145,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -765,9 +1168,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -800,6 +1201,73 @@ class StringQuery(Query):
             ),
         ]
 
+    def _parse_num_lte_multi_idx(self, obj):
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
+            if obj.val < 0:
+                warnings.warn(
+                    """
+                    The 'depth' property of a Node is strictly non-negative.
+                    This condition will always be false.
+                    The statement that triggered this warning is:
+                    {}
+                    """.format(obj),
+                    RedundantQueryFilterWarning,
+                )
+                return [
+                    None,
+                    obj.name,
+                    "False",
+                    "isinstance(df_row.index.get_level_values('node')[0]._depth, Real)",
+                ]
+            return [
+                None,
+                obj.name,
+                "df_row.index.get_level_values('node')[0]._depth <= {}".format(obj.val),
+                "isinstance(df_row.index.get_level_values('node')[0]._depth, Real)",
+            ]
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "node_id":
+            if obj.val < 0:
+                warnings.warn(
+                    """
+                    The 'node_id' property of a Node is strictly non-negative.
+                    This condition will always be false.
+                    The statement that triggered this warning is:
+                    {}
+                    """.format(obj),
+                    RedundantQueryFilterWarning,
+                )
+                return [
+                    None,
+                    obj.name,
+                    "False",
+                    "isinstance(df_row.index.get_level_values('node')[0]._hatchet_nid, Real)",
+                ]
+            return [
+                None,
+                obj.name,
+                "df_row.index.get_level_values('node')[0]._hatchet_nid <= {}".format(
+                    obj.val
+                ),
+                "isinstance(df_row.index.get_level_values('node')[0]._hatchet_nid, Real)",
+            ]
+        return [
+            None,
+            obj.name,
+            "df_row[{}].apply(lambda elem: elem <= {})".format(
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
+                obj.val,
+            ),
+            "is_numeric_dtype(df_row[{}])".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+        ]
+
     def _parse_num_gte(self, obj):
         """Processes numeric greater-than-or-equal-to predicates."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
@@ -810,9 +1278,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -835,9 +1301,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -864,6 +1328,73 @@ class StringQuery(Query):
                 obj.val,
             ),
             "isinstance(df_row[{}], Real)".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+        ]
+
+    def _parse_num_gte_multi_idx(self, obj):
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
+            if obj.val < 0:
+                warnings.warn(
+                    """
+                    The 'depth' property of a Node is strictly non-negative.
+                    This condition will always be true.
+                    The statement that triggered this warning is:
+                    {}
+                    """.format(obj),
+                    RedundantQueryFilterWarning,
+                )
+                return [
+                    None,
+                    obj.name,
+                    "True",
+                    "isinstance(df_row.index.get_level_values('node')[0]._depth, Real)",
+                ]
+            return [
+                None,
+                obj.name,
+                "df_row.index.get_level_values('node')[0]._depth >= {}".format(obj.val),
+                "isinstance(df_row.index.get_level_values('node')[0]._depth, Real)",
+            ]
+        if len(obj.prop.ids) == 1 and obj.prop.ids == "node_id":
+            if obj.val < 0:
+                warnings.warn(
+                    """
+                    The 'node_id' property of a Node is strictly non-negative.
+                    This condition will always be true.
+                    The statement that triggered this warning is:
+                    {}
+                    """.format(obj),
+                    RedundantQueryFilterWarning,
+                )
+                return [
+                    None,
+                    obj.name,
+                    "True",
+                    "isinstance(df_row.index.get_level_values('node')[0]._hatchet_nid, Real)",
+                ]
+            return [
+                None,
+                obj.name,
+                "df_row.index.get_level_values('node')[0]._hatchet_nid >= {}".format(
+                    obj.val
+                ),
+                "isinstance(df_row.index.get_level_values('node')[0]._hatchet_nid, Real)",
+            ]
+        return [
+            None,
+            obj.name,
+            "df_row[{}].apply(lambda elem: elem >= {})".format(
+                (
+                    str(tuple(obj.prop.ids))
+                    if len(obj.prop.ids) > 1
+                    else "'{}'".format(obj.prop.ids[0])
+                ),
+                obj.val,
+            ),
+            "is_numeric_dtype(df_row[{}])".format(
                 str(tuple(obj.prop.ids))
                 if len(obj.prop.ids) > 1
                 else "'{}'".format(obj.prop.ids[0])
@@ -901,6 +1432,36 @@ class StringQuery(Query):
             ),
         ]
 
+    def _parse_num_nan_multi_idx(self, obj):
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
+            return [
+                None,
+                obj.name,
+                "pd.isna(df_row.index.get_level_values('node')[0]._depth)",
+                "isinstance(df_row.index.get_level_values('node')[0]._depth, Real)",
+            ]
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "node_id":
+            return [
+                None,
+                obj.name,
+                "pd.isna(df_row.index.get_level_values('node')[0]._hatchet_nid)",
+                "isinstance(df_row.index.get_level_values('node')[0]._hatchet_nid, Real)",
+            ]
+        return [
+            None,
+            obj.name,
+            "pd.isna(df_row[{}])".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+            "is_numeric_dtype(df_row[{}])".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+        ]
+
     def _parse_num_not_nan(self, obj):
         """Processes predicates that check for NaN."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
@@ -926,6 +1487,36 @@ class StringQuery(Query):
                 else "'{}'".format(obj.prop.ids[0])
             ),
             "isinstance(df_row[{}], Real)".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+        ]
+
+    def _parse_num_not_nan_multi_idx(self, obj):
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
+            return [
+                None,
+                obj.name,
+                "not pd.isna(df_row.index.get_level_values('node')[0]._depth)",
+                "isinstance(df_row.index.get_level_values('node')[0]._depth, Real)",
+            ]
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "node_id":
+            return [
+                None,
+                obj.name,
+                "not pd.isna(df_row.index.get_level_values('node')[0]._hatchet_nid)",
+                "isinstance(df_row.index.get_level_values('node')[0]._hatchet_nid, Real)",
+            ]
+        return [
+            None,
+            obj.name,
+            "not pd.isna(df_row[{}])".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+            "is_numeric_dtype(df_row[{}])".format(
                 str(tuple(obj.prop.ids))
                 if len(obj.prop.ids) > 1
                 else "'{}'".format(obj.prop.ids[0])
@@ -963,6 +1554,36 @@ class StringQuery(Query):
             ),
         ]
 
+    def _parse_num_inf_multi_idx(self, obj):
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
+            return [
+                None,
+                obj.name,
+                "np.isinf(df_row.index.get_level_values('node')[0]._depth)",
+                "isinstance(df_row.index.get_level_values('node')[0]._depth, Real)",
+            ]
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "node_id":
+            return [
+                None,
+                obj.name,
+                "np.isinf(df_row.index.get_level_values('node')[0]._hatchet_nid)",
+                "isinstance(df_row.index.get_level_values('node')[0]._hatchet_nid, Real)",
+            ]
+        return [
+            None,
+            obj.name,
+            "np.isinf(df_row[{}])".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+            "is_numeric_dtype(df_row[{}])".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+        ]
+
     def _parse_num_not_inf(self, obj):
         """Processes predicates that check for not-Infinity."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
@@ -988,6 +1609,36 @@ class StringQuery(Query):
                 else "'{}'".format(obj.prop.ids[0])
             ),
             "isinstance(df_row[{}], Real)".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+        ]
+
+    def _parse_num_not_inf_multi_idx(self, obj):
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
+            return [
+                None,
+                obj.name,
+                "not np.isinf(df_row.index.get_level_values('node')[0]._depth)",
+                "isinstance(df_row.index.get_level_values('node')[0]._depth, Real)",
+            ]
+        if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "node_id":
+            return [
+                None,
+                obj.name,
+                "not np.isinf(df_row.index.get_level_values('node')[0]._hatchet_nid)",
+                "isinstance(df_row.index.get_level_values('node')[0]._hatchet_nid, Real)",
+            ]
+        return [
+            None,
+            obj.name,
+            "not np.isinf(df_row[{}])".format(
+                str(tuple(obj.prop.ids))
+                if len(obj.prop.ids) > 1
+                else "'{}'".format(obj.prop.ids[0])
+            ),
+            "is_numeric_dtype(df_row[{}])".format(
                 str(tuple(obj.prop.ids))
                 if len(obj.prop.ids) > 1
                 else "'{}'".format(obj.prop.ids[0])
