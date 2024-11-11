@@ -57,7 +57,7 @@ class QueryEngine:
             aggregator = predicate_row_aggregator
             if predicate_row_aggregator is None:
                 aggregator = query.default_aggregator
-            elif predicate_row_aggregator == "all":
+            if predicate_row_aggregator == "all":
                 aggregator = _all_aggregator
             elif predicate_row_aggregator == "any":
                 aggregator = _any_aggregator
