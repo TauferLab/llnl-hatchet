@@ -13,7 +13,7 @@ from pandas.api.types import (
 import re
 import sys
 
-from .errors import InvalidQueryPath, InvalidQueryFilter, MultiIndexModeMismatch
+from .errors import InvalidQueryPath, InvalidQueryFilter
 from .query import Query
 
 
