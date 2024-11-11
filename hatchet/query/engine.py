@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 from itertools import groupby
+from collections.abc import Iterable
 import pandas as pd
 
 from .errors import InvalidQueryFilter
@@ -12,6 +13,22 @@ from .query import Query
 from .compound import CompoundQuery
 from .object_dialect import ObjectQuery
 from .string_dialect import parse_string_dialect
+
+
+def _all_aggregator(pred_result):
+    if isinstance(pred_result, Iterable):
+        return all(pred_result)
+    elif isinstance(pred_result, pd.Series):
+        return pred_result.all()
+    return pred_result
+
+
+def _any_aggregator(pred_result):
+    if isinstance(pred_result, Iterable):
+        return any(pred_result)
+    elif isinstance(pred_result, pd.Series):
+        return pred_result.any()
+    return pred_result
 
 
 class QueryEngine:
@@ -40,6 +57,20 @@ class QueryEngine:
             aggregator = predicate_row_aggregator
             if predicate_row_aggregator is None:
                 aggregator = query.default_aggregator
+            elif predicate_row_aggregator == "all":
+                aggregator = _all_aggregator
+            elif predicate_row_aggregator == "any":
+                aggregator = _any_aggregator
+            elif predicate_row_aggregator == "off":
+                if isinstance(dframe.index, pd.MultiIndex):
+                    raise ValueError(
+                        "'predicate_row_aggregator' cannot be 'off' when the DataFrame has a row multi-index"
+                    )
+                aggregator = None
+            elif not callable(predicate_row_aggregator):
+                raise ValueError(
+                    "Invalid value provided for 'predicate_row_aggregator'"
+                )
             self.reset_cache()
             matches = []
             visited = set()
@@ -84,7 +115,10 @@ class QueryEngine:
             else:
                 row = dframe.loc[node]
             predicate_result = filter_func(row)
-            if not isinstance(predicate_result, bool):
+            if (
+                not isinstance(predicate_result, bool)
+                and predicate_row_aggregator is not None
+            ):
                 predicate_result = predicate_row_aggregator(predicate_result)
             if predicate_result:
                 matches.append(i)
