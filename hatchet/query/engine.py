@@ -57,17 +57,17 @@ class QueryEngine:
             aggregator = predicate_row_aggregator
             if predicate_row_aggregator is None:
                 aggregator = query.default_aggregator
-            if predicate_row_aggregator == "all":
+            if aggregator == "all":
                 aggregator = _all_aggregator
-            elif predicate_row_aggregator == "any":
+            elif aggregator == "any":
                 aggregator = _any_aggregator
-            elif predicate_row_aggregator == "off":
+            elif aggregator == "off":
                 if isinstance(dframe.index, pd.MultiIndex):
                     raise ValueError(
                         "'predicate_row_aggregator' cannot be 'off' when the DataFrame has a row multi-index"
                     )
                 aggregator = None
-            elif not callable(predicate_row_aggregator):
+            elif not callable(aggregator):
                 raise ValueError(
                     "Invalid value provided for 'predicate_row_aggregator'"
                 )

@@ -238,7 +238,7 @@ def test_node_caching(mock_graph_literal):
 
     query = ObjectQuery(path)
     engine = QueryEngine()
-    engine._cache_node(node, query, gf.dataframe)
+    engine._cache_node(node, query, gf.dataframe, None)
 
     assert 0 in engine.search_cache[node._hatchet_nid]
     assert 1 in engine.search_cache[node._hatchet_nid]
@@ -269,12 +269,12 @@ def test_match_0_or_more_wildcard(mock_graph_literal):
     engine = QueryEngine()
     matched_paths = []
     for child in sorted(node.children, key=traversal_order):
-        match = engine._match_0_or_more(query, gf.dataframe, child, 1)
+        match = engine._match_0_or_more(query, gf.dataframe, None, child, 1)
         if match is not None:
             matched_paths.extend(match)
 
     assert sorted(matched_paths, key=len) == sorted(correct_paths, key=len)
-    assert engine._match_0_or_more(query, gf.dataframe, none_node, 1) is None
+    assert engine._match_0_or_more(query, gf.dataframe, None, none_node, 1) is None
 
 
 def test_match_1(mock_graph_literal):
@@ -287,10 +287,10 @@ def test_match_1(mock_graph_literal):
     query = ObjectQuery(path)
     engine = QueryEngine()
 
-    assert engine._match_1(query, gf.dataframe, gf.graph.roots[0].children[0], 2) == [
+    assert engine._match_1(query, gf.dataframe, None, gf.graph.roots[0].children[0], 2) == [
         [gf.graph.roots[0].children[0].children[1]]
     ]
-    assert engine._match_1(query, gf.dataframe, gf.graph.roots[0], 2) is None
+    assert engine._match_1(query, gf.dataframe, None, gf.graph.roots[0], 2) is None
 
 
 def test_match(mock_graph_literal):
