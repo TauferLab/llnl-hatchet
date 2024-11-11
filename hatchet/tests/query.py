@@ -287,9 +287,9 @@ def test_match_1(mock_graph_literal):
     query = ObjectQuery(path)
     engine = QueryEngine()
 
-    assert engine._match_1(query, gf.dataframe, None, gf.graph.roots[0].children[0], 2) == [
-        [gf.graph.roots[0].children[0].children[1]]
-    ]
+    assert engine._match_1(
+        query, gf.dataframe, None, gf.graph.roots[0].children[0], 2
+    ) == [[gf.graph.roots[0].children[0].children[1]]]
     assert engine._match_1(query, gf.dataframe, None, gf.graph.roots[0], 2) is None
 
 
