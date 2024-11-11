@@ -401,9 +401,9 @@ def test_apply(mock_graph_literal):
             self.z = "hello"
 
     bad_field_test_dict = list(mock_graph_literal)
-    bad_field_test_dict[0]["children"][0]["children"][0]["metrics"]["list"] = (
-        DummyType()
-    )
+    bad_field_test_dict[0]["children"][0]["children"][0]["metrics"][
+        "list"
+    ] = DummyType()
     gf = GraphFrame.from_literal(bad_field_test_dict)
     path = [{"name": "foo"}, {"name": "bar"}, {"list": DummyType()}]
     query = ObjectQuery(path)
@@ -1028,9 +1028,9 @@ def test_apply_string_dialect(mock_graph_literal):
             self.z = "hello"
 
     bad_field_test_dict = list(mock_graph_literal)
-    bad_field_test_dict[0]["children"][0]["children"][0]["metrics"]["list"] = (
-        DummyType()
-    )
+    bad_field_test_dict[0]["children"][0]["children"][0]["metrics"][
+        "list"
+    ] = DummyType()
     gf = GraphFrame.from_literal(bad_field_test_dict)
     path = """MATCH (p)->(q)->(r)
     WHERE p."name" = "foo" AND q."name" = "bar" AND p."list" = DummyType()
