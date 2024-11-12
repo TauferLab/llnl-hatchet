@@ -12,12 +12,14 @@ from pandas.api.types import (
 )
 import re
 import sys
+from typing import Dict, List, Tuple, Union
 
 from .errors import InvalidQueryPath, InvalidQueryFilter, MultiIndexModeMismatch
+from ..node import Node
 from .query import Query
 
 
-def _process_multi_index_mode(apply_result, multi_index_mode):
+def _process_multi_index_mode(apply_result: pd.Series, multi_index_mode: str):
     if multi_index_mode == "any":
         return apply_result.any()
     if multi_index_mode == "all":
@@ -27,12 +29,19 @@ def _process_multi_index_mode(apply_result, multi_index_mode):
     )
 
 
-def _process_predicate(attr_filter, multi_index_mode):
+def _process_predicate(
+    attr_filter: Dict[Union[str, Tuple[str, ...]], Union[str, Real]],
+    multi_index_mode: str,
+) -> bool:
     """Converts high-level API attribute filter to a lambda"""
     compops = ("<", ">", "==", ">=", "<=", "<>", "!=")  # ,
 
-    def filter_series(df_row):
-        def filter_single_series(df_row, key, single_value):
+    def filter_series(df_row: pd.Series) -> bool:
+        def filter_single_series(
+            df_row: pd.Series,
+            key: Union[str, Tuple[str]],
+            single_value: Union[str, Real],
+        ) -> bool:
             if key == "depth":
                 node = df_row.name
                 if isinstance(single_value, str) and single_value.lower().startswith(
@@ -125,14 +134,19 @@ def _process_predicate(attr_filter, multi_index_mode):
                     )
         return matches
 
-    def filter_dframe(df_row):
+    def filter_dframe(df_row: pd.DataFrame) -> bool:
         if multi_index_mode == "off":
             raise MultiIndexModeMismatch(
                 "The ObjectQuery's 'multi_index_mode' argument \
                 cannot be set to 'off' when using multi-indexed data"
             )
 
-        def filter_single_dframe(node, df_row, key, single_value):
+        def filter_single_dframe(
+            node: Node,
+            df_row: pd.Series,
+            key: Union[str, Tuple[str, ...]],
+            single_value: Union[str, Real],
+        ) -> bool:
             if key == "depth":
                 if isinstance(single_value, str) and single_value.lower().startswith(
                     compops
@@ -207,7 +221,7 @@ def _process_predicate(attr_filter, multi_index_mode):
                     )
         return matches
 
-    def filter_choice(df_row):
+    def filter_choice(df_row: Union[pd.Series, pd.DataFrame]) -> bool:
         if isinstance(df_row, pd.DataFrame):
             return filter_dframe(df_row)
         return filter_series(df_row)
@@ -218,7 +232,7 @@ def _process_predicate(attr_filter, multi_index_mode):
 class ObjectQuery(Query):
     """Class for representing and parsing queries using the Object-based dialect."""
 
-    def __init__(self, query, multi_index_mode="off"):
+    def __init__(self, query: List, multi_index_mode: str = "off") -> None:
         """Builds a new ObjectQuery from an instance of the Object-based dialect syntax.
 
         Arguments:

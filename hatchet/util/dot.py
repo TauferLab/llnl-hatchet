@@ -3,11 +3,24 @@
 #
 # SPDX-License-Identifier: MIT
 
+from typing import List, Tuple, Union
+
 import matplotlib.cm
 import matplotlib.colors
+import pandas as pd
+
+from ..node import Node
 
 
-def trees_to_dot(roots, dataframe, metric, name, rank, thread, threshold):
+def trees_to_dot(
+    roots: List[Node],
+    dataframe: pd.DataFrame,
+    metric: Union[str, Tuple[str, ...]],
+    name: Union[str, Tuple[str, ...]],
+    rank: int,
+    thread: int,
+    threshold: float,
+) -> str:
     """Calls to_dot in turn for each tree in the graph/forest."""
     text = (
         "strict digraph {\n"
@@ -33,14 +46,22 @@ def trees_to_dot(roots, dataframe, metric, name, rank, thread, threshold):
     return text
 
 
-def to_dot(hnode, dataframe, metric, name, rank, thread, threshold, visited):
+def to_dot(
+    hnode: Node,
+    dataframe: pd.DataFrame,
+    metric: Union[str, Tuple[str, ...]],
+    name: Union[str, Tuple[str, ...]],
+    rank: int,
+    thread: int,
+    threshold: float,
+    visited: List[Node],
+) -> Tuple[str, str]:
     """Write to graphviz dot format."""
     colormap = matplotlib.cm.Reds
     min_time = dataframe[metric].min()
     max_time = dataframe[metric].max()
 
-    def add_nodes_and_edges(hnode):
-
+    def add_nodes_and_edges(hnode: Node) -> Tuple[str, str]:
         # set dataframe index based on if rank is a part of the index
         if "rank" in dataframe.index.names and "thread" in dataframe.index.names:
             df_index = (hnode, rank, thread)

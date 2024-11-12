@@ -6,7 +6,10 @@
 from abc import abstractmethod
 
 import sys
+from typing import List
 
+from ..node import Node
+from ..graph import Graph
 from .query import Query
 from .string_dialect import parse_string_dialect
 from .object_dialect import ObjectQuery
@@ -16,7 +19,7 @@ from .errors import BadNumberNaryQueryArgs
 class CompoundQuery(object):
     """Base class for all types of compound queries."""
 
-    def __init__(self, *queries):
+    def __init__(self, *queries) -> None:
         """Collect the provided queries into a list, constructing ObjectQuery and StringQuery objects as needed.
 
         Arguments:
@@ -39,7 +42,9 @@ class CompoundQuery(object):
                 )
 
     @abstractmethod
-    def _apply_op_to_results(self, subquery_results):
+    def _apply_op_to_results(
+        self, subquery_results: List[List[Node]], graph: Graph
+    ) -> List[Node]:
         """Combines/Modifies the results of the subqueries based on the operation the subclass
         represents.
         """
@@ -51,7 +56,7 @@ class ConjunctionQuery(CompoundQuery):
     using set conjunction.
     """
 
-    def __init__(self, *queries):
+    def __init__(self, *queries) -> None:
         """Create the ConjunctionQuery.
 
         Arguments:
@@ -66,7 +71,9 @@ class ConjunctionQuery(CompoundQuery):
                 "ConjunctionQuery requires 2 or more subqueries"
             )
 
-    def _apply_op_to_results(self, subquery_results, graph):
+    def _apply_op_to_results(
+        self, subquery_results: List[List[Node]], graph: Graph
+    ) -> List[Node]:
         """Combines the results of the subqueries using set conjunction.
 
         Arguments:
@@ -85,7 +92,7 @@ class DisjunctionQuery(CompoundQuery):
     using set disjunction.
     """
 
-    def __init__(self, *queries):
+    def __init__(self, *queries) -> None:
         """Create the DisjunctionQuery.
 
         Arguments:
@@ -100,7 +107,9 @@ class DisjunctionQuery(CompoundQuery):
                 "DisjunctionQuery requires 2 or more subqueries"
             )
 
-    def _apply_op_to_results(self, subquery_results, graph):
+    def _apply_op_to_results(
+        self, subquery_results: List[List[Node]], graph: Graph
+    ) -> List[Node]:
         """Combines the results of the subqueries using set disjunction.
 
         Arguments:
@@ -119,7 +128,7 @@ class ExclusiveDisjunctionQuery(CompoundQuery):
     using exclusive set disjunction.
     """
 
-    def __init__(self, *queries):
+    def __init__(self, *queries) -> None:
         """Create the ExclusiveDisjunctionQuery.
 
         Arguments:
@@ -132,7 +141,9 @@ class ExclusiveDisjunctionQuery(CompoundQuery):
         if len(self.subqueries) < 2:
             raise BadNumberNaryQueryArgs("XorQuery requires 2 or more subqueries")
 
-    def _apply_op_to_results(self, subquery_results, graph):
+    def _apply_op_to_results(
+        self, subquery_results: List[List[Node]], graph: Graph
+    ) -> List[Node]:
         """Combines the results of the subqueries using exclusive set disjunction.
 
         Arguments:
@@ -153,7 +164,7 @@ class NegationQuery(CompoundQuery):
     its single subquery.
     """
 
-    def __init__(self, *queries):
+    def __init__(self, *queries) -> None:
         """Create the NegationQuery.
 
         Arguments:
@@ -166,7 +177,9 @@ class NegationQuery(CompoundQuery):
         if len(self.subqueries) != 1:
             raise BadNumberNaryQueryArgs("NotQuery requires exactly 1 subquery")
 
-    def _apply_op_to_results(self, subquery_results, graph):
+    def _apply_op_to_results(
+        self, subquery_results: List[List[Node]], graph: Graph
+    ) -> List[Node]:
         """Inverts the results of the subquery so that all nodes not in the results are returned.
 
         Arguments:

@@ -9,6 +9,8 @@ import re
 import subprocess
 import os
 import math
+from typing import List, Union
+from io import TextIOWrapper
 
 import pandas as pd
 import numpy as np
@@ -26,7 +28,9 @@ unknown_label_counter = 0
 class CaliperReader:
     """Read in a Caliper file (`cali` or split JSON) or file-like object."""
 
-    def __init__(self, filename_or_stream, query=""):
+    def __init__(
+        self, filename_or_stream: Union[str, TextIOWrapper], query: str = ""
+    ) -> None:
         """Read from Caliper files (`cali` or split JSON).
 
         Args:
@@ -55,7 +59,7 @@ class CaliperReader:
         if isinstance(self.filename_or_stream, str):
             _, self.filename_ext = os.path.splitext(filename_or_stream)
 
-    def read_json_sections(self):
+    def read_json_sections(self) -> None:
         # if cali-query exists, extract data from .cali to a file-like object
         if self.filename_ext == ".cali":
             cali_query = which("cali-query")
@@ -140,7 +144,7 @@ class CaliperReader:
             if self.json_cols[idx] != "rank" and item["is_value"] is True:
                 self.metric_columns.append(self.json_cols[idx])
 
-    def create_graph(self):
+    def create_graph(self) -> List[Node]:
         list_roots = []
 
         global unknown_label_counter
@@ -189,7 +193,7 @@ class CaliperReader:
 
         return list_roots
 
-    def read(self):
+    def read(self) -> hatchet.graphframe.GraphFrame:
         """Read the caliper JSON file to extract the calling context tree."""
         with self.timer.phase("read json"):
             self.read_json_sections()

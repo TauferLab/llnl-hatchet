@@ -6,6 +6,8 @@
 # Make flake8 ignore unused names in this file
 # flake8: noqa: F401
 
+from typing import Any, Union, List, TypeVar
+
 from .query import Query
 from .compound import (
     CompoundQuery,
@@ -39,20 +41,54 @@ from .compat import (
     parse_cypher_query,
 )
 
+BaseQueryType = TypeVar("BaseQuery", Query, ObjectQuery, StringQuery, str, List)
+CompoundQueryType = TypeVar(
+    "CompoundQuery",
+    CompoundQuery,
+    ConjunctionQuery,
+    DisjunctionQuery,
+    ExclusiveDisjunctionQuery,
+    NegationQuery,
+)
+LegacyQueryType = TypeVar(
+    "LegacyQuery",
+    AbstractQuery,
+    NaryQuery,
+    AndQuery,
+    IntersectionQuery,
+    OrQuery,
+    UnionQuery,
+    XorQuery,
+    SymDifferenceQuery,
+    NotQuery,
+    QueryMatcher,
+    CypherQuery,
+)
+AnyQueryType = TypeVar("AnyQuery", BaseQueryType, CompoundQueryType, LegacyQueryType)
 
-def combine_via_conjunction(query0, query1):
+
+def combine_via_conjunction(
+    query0: Union[BaseQueryType, CompoundQueryType],
+    query1: Union[BaseQueryType, CompoundQueryType],
+) -> ConjunctionQuery:
     return ConjunctionQuery(query0, query1)
 
 
-def combine_via_disjunction(query0, query1):
+def combine_via_disjunction(
+    query0: Union[BaseQueryType, CompoundQueryType],
+    query1: Union[BaseQueryType, CompoundQueryType],
+) -> DisjunctionQuery:
     return DisjunctionQuery(query0, query1)
 
 
-def combine_via_exclusive_disjunction(query0, query1):
+def combine_via_exclusive_disjunction(
+    query0: Union[BaseQueryType, CompoundQueryType],
+    query1: Union[BaseQueryType, CompoundQueryType],
+) -> ExclusiveDisjunctionQuery:
     return ExclusiveDisjunctionQuery(query0, query1)
 
 
-def negate_query(query):
+def negate_query(query: Union[BaseQueryType, CompoundQueryType]) -> NegationQuery:
     return NegationQuery(query)
 
 
@@ -68,7 +104,7 @@ CompoundQuery.__xor__ = combine_via_exclusive_disjunction
 CompoundQuery.__not__ = negate_query
 
 
-def is_hatchet_query(query_obj):
+def is_hatchet_query(query_obj: Any) -> bool:
     return (
         issubclass(type(query_obj), Query)
         or issubclass(type(query_obj), CompoundQuery)

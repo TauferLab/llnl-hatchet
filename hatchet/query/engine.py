@@ -5,9 +5,11 @@
 
 from itertools import groupby
 import pandas as pd
+from typing import List, Set, Union
 
 from .errors import InvalidQueryFilter
 from ..node import Node, traversal_order
+from ..graph import Graph
 from .query import Query
 from .compound import CompoundQuery
 from .object_dialect import ObjectQuery
@@ -17,15 +19,17 @@ from .string_dialect import parse_string_dialect
 class QueryEngine:
     """Class for applying queries to GraphFrames."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Creates the QueryEngine."""
         self.search_cache = {}
 
-    def reset_cache(self):
+    def reset_cache(self) -> None:
         """Resets the cache in the QueryEngine."""
         self.search_cache = {}
 
-    def apply(self, query, graph, dframe):
+    def apply(
+        self, query: Union[Query, CompoundQuery], graph: Graph, dframe: pd.DataFrame
+    ) -> List[Node]:
         """Apply the query to a GraphFrame.
 
         Arguments:
@@ -59,7 +63,7 @@ class QueryEngine:
         else:
             raise TypeError("Invalid query data type ({})".format(str(type(query))))
 
-    def _cache_node(self, node, query, dframe):
+    def _cache_node(self, node: Node, query: Query, dframe: pd.DataFrame) -> None:
         """Cache (Memoize) the parts of the query that the node matches.
 
         Arguments:
@@ -82,7 +86,9 @@ class QueryEngine:
                 matches.append(i)
         self.search_cache[node._hatchet_nid] = matches
 
-    def _match_0_or_more(self, query, dframe, node, wcard_idx):
+    def _match_0_or_more(
+        self, query: Query, dframe: pd.DataFrame, node: Node, wcard_idx: int
+    ) -> List[List[Node]]:
         """Process a "*" predicate in the query on a subgraph.
 
         Arguments:
@@ -128,7 +134,9 @@ class QueryEngine:
                 return [[]]
             return None
 
-    def _match_1(self, query, dframe, node, idx):
+    def _match_1(
+        self, query: Query, dframe: pd.DataFrame, node: Node, idx: int
+    ) -> List[List[Node]]:
         """Process a "." predicate in the query on a subgraph.
 
         Arguments:
@@ -156,7 +164,9 @@ class QueryEngine:
             return None
         return matches
 
-    def _match_pattern(self, query, dframe, pattern_root, match_idx):
+    def _match_pattern(
+        self, query: Query, dframe: pd.DataFrame, pattern_root: Node, match_idx: int
+    ) -> List[List[Node]]:
         """Try to match the query pattern starting at the provided root node.
 
         Arguments:
@@ -221,7 +231,14 @@ class QueryEngine:
             pattern_idx += 1
         return matches
 
-    def _apply_impl(self, query, dframe, node, visited, matches):
+    def _apply_impl(
+        self,
+        query: Query,
+        dframe: pd.DataFrame,
+        node: Node,
+        visited: Set[Node],
+        matches: List[List[Node]],
+    ) -> None:
         """Traverse the subgraph with the specified root, and collect all paths that match the query.
 
         Arguments:

@@ -6,6 +6,7 @@
 import re
 import os
 import glob
+from typing import Any, Dict, List, Tuple
 import pandas as pd
 import hatchet.graphframe
 from hatchet.node import Node
@@ -16,7 +17,7 @@ from hatchet.frame import Frame
 class TAUReader:
     """Read in a profile generated using TAU."""
 
-    def __init__(self, dirname):
+    def __init__(self, dirname: str) -> None:
         self.dirname = dirname
         self.node_dicts = []
         self.callpath_to_node = {}
@@ -30,17 +31,17 @@ class TAUReader:
 
     def create_node_dict(
         self,
-        node,
-        columns,
-        metric_values,
-        name,
-        filename,
-        module,
-        start_line,
-        end_line,
-        rank,
-        thread,
-    ):
+        node: Node,
+        columns: List[str],
+        metric_values: Tuple[Any, ...],
+        name: str,
+        filename: str,
+        module: str,
+        start_line: int,
+        end_line: int,
+        rank: int,
+        thread: int,
+    ) -> Dict[str, Any]:
         node_dict = {
             "node": node,
             "rank": rank,
@@ -55,8 +56,10 @@ class TAUReader:
             node_dict[columns[i + 1]] = metric_values[i]
         return node_dict
 
-    def create_graph(self):
-        def _get_name_file_module(is_parent, node_info, symbol):
+    def create_graph(self) -> List[Node]:
+        def _get_name_file_module(
+            is_parent: bool, node_info: str, symbol: str
+        ) -> Tuple[str, str, str]:
             """This function gets the name, file and module information
             for a node using the corresponding line in the output file.
             Example line: [UNWIND] <file> [@] <name> [{<file_or_module>} {<line>}]
@@ -134,7 +137,7 @@ class TAUReader:
                             module = node_info[2]
             return [name, file, module]
 
-        def _get_line_numbers(node_info):
+        def _get_line_numbers(node_info: str) -> Tuple[str, str]:
             start_line, end_line = 0, 0
             # There should be [{}] symbols if there is line number information.
             if "[{" in node_info:
@@ -157,7 +160,7 @@ class TAUReader:
                         end_line = line_numbers.split(",")[1]
             return [start_line, end_line]
 
-        def _create_parent(child_node, parent_callpath):
+        def _create_parent(child_node: Node, parent_callpath: str) -> None:
             """In TAU output, sometimes we see a node as a parent
             in the callpath before we see it as a leaf node. In
             this case, we need to create a hatchet node for the parent.
@@ -201,7 +204,7 @@ class TAUReader:
                 child_node.add_parent(parent_node)
                 _create_parent(parent_node, grand_parent_callpath)
 
-        def _construct_column_list(first_rank_filenames):
+        def _construct_column_list(first_rank_filenames: List[str]) -> List[str]:
             """This function constructs columns, exc_metrics, and
             inc_metrics using all metric files of a rank. It gets the
             all metric files of a rank as a tuple and only loads the
@@ -443,7 +446,7 @@ class TAUReader:
 
         return list_roots
 
-    def read(self):
+    def read(self) -> hatchet.graphframe.GraphFrame:
         """Read the TAU profile file to extract the calling context tree."""
         # Add all nodes and roots.
         roots = self.create_graph()

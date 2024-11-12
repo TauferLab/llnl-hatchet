@@ -34,16 +34,23 @@ from ..version import __version__
 import pandas as pd
 import numpy as np
 import warnings
+from typing import Any, Dict, List, Tuple, Union
 from ..util.colormaps import ColorMaps
+from ..node import Node
 
 
 class ConsoleRenderer:
-    def __init__(self, unicode=False, color=False):
+    def __init__(self, unicode: bool = False, color: bool = False) -> None:
         self.unicode = unicode
         self.color = color
         self.visited = []
 
-    def render(self, roots, dataframe, **kwargs):
+    def render(
+        self,
+        roots: Union[List[Node], Tuple[Node, ...]],
+        dataframe: pd.DataFrame,
+        **kwargs,
+    ) -> str:
         self.render_header = kwargs["render_header"]
 
         if self.render_header:
@@ -161,7 +168,7 @@ class ConsoleRenderer:
             return result.encode("utf-8")
 
     # pylint: disable=W1401
-    def render_preamble(self):
+    def render_preamble(self) -> str:
         lines = [
             r"    __          __       __         __ ",
             r"   / /_  ____ _/ /______/ /_  ___  / /_",
@@ -174,7 +181,7 @@ class ConsoleRenderer:
 
         return "\n".join(lines)
 
-    def render_legend(self):
+    def render_legend(self) -> str:
         def render_label(index, low, high):
             metric_range = self.max_metric - self.min_metric
 
@@ -247,7 +254,13 @@ class ConsoleRenderer:
 
         return legend
 
-    def render_frame(self, node, dataframe, indent="", child_indent=""):
+    def render_frame(
+        self,
+        node: Node,
+        dataframe: pd.DataFrame,
+        indent: str = "",
+        child_indent: str = "",
+    ) -> str:
         node_depth = node._depth
         if node_depth < self.depth:
             # set dataframe index based on whether rank and thread are part of
@@ -288,8 +301,8 @@ class ConsoleRenderer:
                         "none": "",
                         "constant": "\U00002192",
                         "phased": "\U00002933",
-                        "dynamic": "\U000021DD",
-                        "sporadic": "\U0000219D",
+                        "dynamic": "\U000021dd",
+                        "sporadic": "\U0000219d",
                     }
                     pattern_metric = dataframe.loc[df_index, self.annotation_column]
                     annotation_content = self.temporal_symbols[pattern_metric]
@@ -395,7 +408,7 @@ class ConsoleRenderer:
 
         return result
 
-    def _ansi_color_for_metric(self, metric):
+    def _ansi_color_for_metric(self, metric: float) -> str:
         metric_range = self.max_metric - self.min_metric
 
         if metric_range != 0:
@@ -418,7 +431,7 @@ class ConsoleRenderer:
         else:
             return self.colors.blue
 
-    def _ansi_color_for_name(self, node_name):
+    def _ansi_color_for_name(self, node_name: str) -> str:
         if self.highlight is False:
             return ""
 
@@ -445,7 +458,7 @@ class ConsoleRenderer:
     class colors_disabled:
         colormap = ["", "", "", "", "", "", ""]
 
-        def __getattr__(self, key):
+        def __getattr__(self, key: str) -> str:
             return ""
 
     colors_disabled = colors_disabled()

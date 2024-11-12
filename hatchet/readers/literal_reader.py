@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+from typing import Any, Dict, List
+
 import pandas as pd
 
 import hatchet.graphframe
@@ -59,7 +61,7 @@ class LiteralReader:
         (GraphFrame): graphframe containing data from dictionaries
     """
 
-    def __init__(self, graph_dict):
+    def __init__(self, graph_dict: Dict) -> None:
         """Read from list of dictionaries.
 
         graph_dict (dict): List of dictionaries encoding nodes.
@@ -67,8 +69,13 @@ class LiteralReader:
         self.graph_dict = graph_dict
 
     def parse_node_literal(
-        self, frame_to_node_dict, node_dicts, child_dict, hparent, seen_nids
-    ):
+        self,
+        frame_to_node_dict: Dict[Frame, Node],
+        node_dicts: List[Dict[str, Any]],
+        child_dict: Dict[str, Any],
+        hparent: Node,
+        seen_nids: List[int],
+    ) -> None:
         """Create node_dict for one node and then call the function
         recursively on all children.
         """
@@ -110,7 +117,7 @@ class LiteralReader:
                     frame_to_node_dict, node_dicts, child, hnode, seen_nids
                 )
 
-    def read(self):
+    def read(self) -> hatchet.graphframe.GraphFrame:
         list_roots = []
         node_dicts = []
         frame_to_node_dict = {}

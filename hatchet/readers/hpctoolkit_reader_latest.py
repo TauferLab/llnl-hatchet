@@ -6,7 +6,7 @@
 import os
 import re
 import struct
-from typing import Dict, Union
+from typing import Dict, Tuple, Union
 
 import pandas as pd
 
@@ -18,7 +18,7 @@ from hatchet.node import Node
 
 def safe_unpack(
     format: str, data: bytes, offset: int, index: int = None, index_length: int = None
-) -> tuple:
+) -> Tuple:
     length = struct.calcsize(format)
     if index:
         offset += index * (length if index_length is None else index_length)
@@ -49,7 +49,6 @@ FILE_HEADER_OFFSET = 16
 
 
 class HPCToolkitReaderLatest:
-
     def __init__(
         self,
         dir_path: str,
@@ -217,7 +216,7 @@ class HPCToolkitReaderLatest:
         return self._functions[pFunction]
 
     def _store_cct_node(
-        self, ctxId: int, frame: dict, parent: Node = None, depth: int = 0
+        self, ctxId: int, frame: Dict, parent: Node = None, depth: int = 0
     ) -> Node:
         node = Node(Frame(frame), parent=parent, hnid=ctxId, depth=depth)
         if parent is None:
@@ -228,9 +227,7 @@ class HPCToolkitReaderLatest:
             "node": node,
             "name": (
                 # f"{frame['type']}: {frame['name']}"
-                frame["name"]
-                if frame["name"] != 1
-                else "entry"
+                frame["name"] if frame["name"] != 1 else "entry"
             ),
         }
 
@@ -249,7 +246,6 @@ class HPCToolkitReaderLatest:
         meta_db: bytes,
         parent_time: int,
     ) -> None:
-
         final_offset = current_offset + total_size
 
         while current_offset < final_offset:
@@ -311,7 +307,6 @@ class HPCToolkitReaderLatest:
     def _read_summary_profile(
         self,
     ) -> None:
-
         with open(self._profile_file, "rb") as file:
             file.seek(FILE_HEADER_OFFSET)
             formatProfileInfos = "<QQ"

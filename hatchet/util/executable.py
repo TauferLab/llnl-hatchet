@@ -6,7 +6,7 @@
 import os
 
 
-def which(executable):
+def which(executable: str) -> str:
     """Finds an `executable` in the user's PATH like command-line which.
 
     Args:

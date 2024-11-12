@@ -6,6 +6,8 @@
 from numbers import Real
 import re
 import sys
+from collections.abc import Callable
+from typing import Any, Tuple, Union
 import pandas as pd  # noqa: F401
 from pandas.api.types import is_numeric_dtype, is_string_dtype  # noqa: F401
 import numpy as np  # noqa: F401
@@ -15,6 +17,7 @@ import warnings
 
 from .errors import InvalidQueryPath, InvalidQueryFilter, RedundantQueryFilterWarning
 from .query import Query
+from .compound import CompoundQuery
 
 
 # PEG grammar for the String-based dialect
@@ -60,12 +63,14 @@ SingleMetricId: INT | STRING;
 cypher_query_mm = metamodel_from_str(CYPHER_GRAMMAR)
 
 
-def cname(obj):
+def cname(obj: Any) -> str:
     """Utility function to get the name of the rule represented by the input"""
     return obj.__class__.__name__
 
 
-def filter_check_types(type_check, df_row, filt_lambda):
+def filter_check_types(
+    type_check: str, df_row: Union[pd.Series, pd.DataFrame], filt_lambda: Callable
+) -> bool:
     """Utility function used in String-based predicates
        to make sure the node data used in the actual boolean predicate
        is of the correct type.
@@ -97,7 +102,7 @@ def filter_check_types(type_check, df_row, filt_lambda):
 class StringQuery(Query):
     """Class for representing and parsing queries using the String-based dialect."""
 
-    def __init__(self, cypher_query, multi_index_mode="off"):
+    def __init__(self, cypher_query: str, multi_index_mode: str = "off") -> None:
         """Builds a new StringQuery object representing a query in the String-based dialect.
 
         Arguments:
@@ -128,7 +133,7 @@ class StringQuery(Query):
         self._build_lambdas()
         self._build_query()
 
-    def _build_query(self):
+    def _build_query(self) -> None:
         """Builds the entire query using 'match' and 'rel' using
         the pre-parsed quantifiers and predicates.
         """
@@ -149,7 +154,7 @@ class StringQuery(Query):
                 else:
                     self.rel(quantifier=wcard, predicate=eval(filt_str))
 
-    def _build_lambdas(self):
+    def _build_lambdas(self) -> None:
         """Constructs the final predicate lambdas from the pre-parsed
         predicate information.
         """
@@ -175,7 +180,7 @@ class StringQuery(Query):
                 )
                 self.lambda_filters[i] = bool_expr
 
-    def _parse_path(self, path_obj):
+    def _parse_path(self, path_obj: Any) -> None:
         """Parses the MATCH statement of a String-based query."""
         nodes = path_obj.path.nodes
         idx = len(self.wcards)
@@ -188,7 +193,7 @@ class StringQuery(Query):
                 self.wcard_pos[n.name] = idx
             idx += 1
 
-    def _parse_conditions(self, cond_expr):
+    def _parse_conditions(self, cond_expr: Any) -> None:
         """Top level function for parsing the WHERE statement of
         a String-based query.
         """
@@ -209,7 +214,7 @@ class StringQuery(Query):
                 if self.filters[i][0][0] != "not":
                     self.filters[i][0][0] = None
 
-    def _is_unary_cond(self, obj):
+    def _is_unary_cond(self, obj: Any) -> bool:
         """Detect whether a predicate is unary or not."""
         if (
             cname(obj) == "NotCond"
@@ -220,13 +225,13 @@ class StringQuery(Query):
             return True
         return False
 
-    def _is_binary_cond(self, obj):
+    def _is_binary_cond(self, obj: Any) -> bool:
         """Detect whether a predicate is binary or not."""
         if cname(obj) in ["AndCond", "OrCond"]:
             return True
         return False
 
-    def _parse_binary_cond(self, obj):
+    def _parse_binary_cond(self, obj: Any) -> Tuple[str, str, str, str]:
         """Top level function for parsing binary predicates."""
         if cname(obj) == "AndCond":
             return self._parse_and_cond(obj)
@@ -234,38 +239,40 @@ class StringQuery(Query):
             return self._parse_or_cond(obj)
         raise RuntimeError("Bad Binary Condition")
 
-    def _parse_or_cond(self, obj):
+    def _parse_or_cond(self, obj: Any) -> Tuple[str, str, str, str]:
         """Top level function for parsing predicates combined with logical OR."""
         converted_subcond = self._parse_unary_cond(obj.subcond)
         converted_subcond[0] = "or"
         return converted_subcond
 
-    def _parse_and_cond(self, obj):
+    def _parse_and_cond(self, obj: Any) -> Tuple[str, str, str, str]:
         """Top level function for parsing predicates combined with logical AND."""
         converted_subcond = self._parse_unary_cond(obj.subcond)
         converted_subcond[0] = "and"
         return converted_subcond
 
-    def _parse_unary_cond(self, obj):
+    def _parse_unary_cond(self, obj: Any) -> Tuple[str, str, str, str]:
         """Top level function for parsing unary predicates."""
         if cname(obj) == "NotCond":
             return self._parse_not_cond(obj)
         return self._parse_single_cond(obj)
 
-    def _parse_not_cond(self, obj):
+    def _parse_not_cond(self, obj: Any) -> Tuple[str, str, str, str]:
         """Parse predicates containing the logical NOT operator."""
         converted_subcond = self._parse_single_cond(obj.subcond)
         converted_subcond[2] = "not {}".format(converted_subcond[2])
         return converted_subcond
 
-    def _run_method_based_on_multi_idx_mode(self, method_name, obj):
+    def _run_method_based_on_multi_idx_mode(
+        self, method_name: str, obj: Any
+    ) -> Tuple[str, str, str, str]:
         real_method_name = method_name
         if self.multi_index_mode != "off":
             real_method_name = method_name + "_multi_idx"
         method = eval("StringQuery.{}".format(real_method_name))
         return method(self, obj)
 
-    def _parse_single_cond(self, obj):
+    def _parse_single_cond(self, obj: Any) -> Tuple[str, str, str, str]:
         """Top level function for parsing individual numeric or string predicates."""
         if self._is_str_cond(obj):
             return self._parse_str(obj)
@@ -281,7 +288,7 @@ class StringQuery(Query):
             return self._run_method_based_on_multi_idx_mode("_parse_not_leaf", obj)
         raise RuntimeError("Bad Single Condition")
 
-    def _parse_none(self, obj):
+    def _parse_none(self, obj: Any) -> Tuple[str, str, str, str]:
         """Parses 'property IS NONE'."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
@@ -308,12 +315,12 @@ class StringQuery(Query):
             None,
         ]
 
-    def _add_aggregation_call_to_multi_idx_predicate(self, predicate):
+    def _add_aggregation_call_to_multi_idx_predicate(self, predicate: str) -> str:
         if self.multi_index_mode == "any":
             return predicate + ".any()"
         return predicate + ".all()"
 
-    def _parse_none_multi_idx(self, obj):
+    def _parse_none_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
                 None,
@@ -341,7 +348,7 @@ class StringQuery(Query):
             None,
         ]
 
-    def _parse_not_none(self, obj):
+    def _parse_not_none(self, obj: Any) -> Tuple[str, str, str, str]:
         """Parses 'property IS NOT NONE'."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
@@ -368,7 +375,7 @@ class StringQuery(Query):
             None,
         ]
 
-    def _parse_not_none_multi_idx(self, obj):
+    def _parse_not_none_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
                 None,
@@ -396,7 +403,7 @@ class StringQuery(Query):
             None,
         ]
 
-    def _parse_leaf(self, obj):
+    def _parse_leaf(self, obj: Any) -> Tuple[str, str, str, str]:
         """Parses 'node IS LEAF'."""
         return [
             None,
@@ -405,7 +412,7 @@ class StringQuery(Query):
             None,
         ]
 
-    def _parse_leaf_multi_idx(self, obj):
+    def _parse_leaf_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         return [
             None,
             obj.name,
@@ -413,7 +420,7 @@ class StringQuery(Query):
             None,
         ]
 
-    def _parse_not_leaf(self, obj):
+    def _parse_not_leaf(self, obj: Any) -> Tuple[str, str, str, str]:
         """Parses 'node IS NOT LEAF'."""
         return [
             None,
@@ -422,7 +429,7 @@ class StringQuery(Query):
             None,
         ]
 
-    def _parse_not_leaf_multi_idx(self, obj):
+    def _parse_not_leaf_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         return [
             None,
             obj.name,
@@ -430,7 +437,7 @@ class StringQuery(Query):
             None,
         ]
 
-    def _is_str_cond(self, obj):
+    def _is_str_cond(self, obj: Any) -> bool:
         """Determines whether a predicate is for string data."""
         if cname(obj) in [
             "StringEq",
@@ -442,7 +449,7 @@ class StringQuery(Query):
             return True
         return False
 
-    def _is_num_cond(self, obj):
+    def _is_num_cond(self, obj: Any) -> bool:
         """Determines whether a predicate is for numeric data."""
         if cname(obj) in [
             "NumEq",
@@ -458,7 +465,7 @@ class StringQuery(Query):
             return True
         return False
 
-    def _parse_str(self, obj):
+    def _parse_str(self, obj: Any) -> Tuple[str, str, str, str]:
         """Function that redirects processing of string predicates
         to the correct function.
         """
@@ -476,7 +483,7 @@ class StringQuery(Query):
             return self._run_method_based_on_multi_idx_mode("_parse_str_match", obj)
         raise RuntimeError("Bad String Op Class")
 
-    def _parse_str_eq(self, obj):
+    def _parse_str_eq(self, obj: Any) -> Tuple[str, str, str, str]:
         """Processes string equivalence predicates."""
         return [
             None,
@@ -496,7 +503,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_eq_multi_idx(self, obj):
+    def _parse_str_eq_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         return [
             None,
             obj.name,
@@ -517,7 +524,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_starts_with(self, obj):
+    def _parse_str_starts_with(self, obj: Any) -> Tuple[str, str, str, str]:
         """Processes string 'startswith' predicates."""
         return [
             None,
@@ -537,7 +544,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_starts_with_multi_idx(self, obj):
+    def _parse_str_starts_with_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         return [
             None,
             obj.name,
@@ -558,7 +565,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_ends_with(self, obj):
+    def _parse_str_ends_with(self, obj: Any) -> Tuple[str, str, str, str]:
         """Processes string 'endswith' predicates."""
         return [
             None,
@@ -578,7 +585,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_ends_with_multi_idx(self, obj):
+    def _parse_str_ends_with_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         return [
             None,
             obj.name,
@@ -599,7 +606,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_contains(self, obj):
+    def _parse_str_contains(self, obj: Any) -> Tuple[str, str, str, str]:
         """Processes string 'contains' predicates."""
         return [
             None,
@@ -619,7 +626,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_contains_multi_idx(self, obj):
+    def _parse_str_contains_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         return [
             None,
             obj.name,
@@ -640,7 +647,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_match(self, obj):
+    def _parse_str_match(self, obj: Any) -> Tuple[str, str, str, str]:
         """Processes string regex match predicates."""
         return [
             None,
@@ -660,7 +667,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_match_multi_idx(self, obj):
+    def _parse_str_match_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         return [
             None,
             obj.name,
@@ -681,7 +688,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num(self, obj):
+    def _parse_num(self, obj: Any) -> Tuple[str, str, str, str]:
         """Function that redirects processing of numeric predicates
         to the correct function.
         """
@@ -705,7 +712,7 @@ class StringQuery(Query):
             return self._run_method_based_on_multi_idx_mode("_parse_num_not_inf", obj)
         raise RuntimeError("Bad Number Op Class")
 
-    def _parse_num_eq(self, obj):
+    def _parse_num_eq(self, obj: Any) -> Tuple[str, str, str, str]:
         """Processes numeric equivalence predicates."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val == -1:
@@ -722,9 +729,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -747,9 +752,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -782,7 +785,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_eq_multi_idx(self, obj):
+    def _parse_num_eq_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val == -1:
                 return [
@@ -798,9 +801,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -823,9 +824,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -862,7 +861,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_lt(self, obj):
+    def _parse_num_lt(self, obj: Any) -> Tuple[str, str, str, str]:
         """Processes numeric less-than predicates."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val < 0:
@@ -872,9 +871,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -897,9 +894,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -932,7 +927,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_lt_multi_idx(self, obj):
+    def _parse_num_lt_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val < 0:
                 warnings.warn(
@@ -941,9 +936,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -966,9 +959,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1005,7 +996,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_gt(self, obj):
+    def _parse_num_gt(self, obj: Any) -> Tuple[str, str, str, str]:
         """Processes numeric greater-than predicates."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val < 0:
@@ -1015,9 +1006,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1040,9 +1029,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1075,7 +1062,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_gt_multi_idx(self, obj):
+    def _parse_num_gt_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val < 0:
                 warnings.warn(
@@ -1084,9 +1071,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1109,9 +1094,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1148,7 +1131,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_lte(self, obj):
+    def _parse_num_lte(self, obj: Any) -> Tuple[str, str, str, str]:
         """Processes numeric less-than-or-equal-to predicates."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val < 0:
@@ -1158,9 +1141,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1183,9 +1164,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1218,7 +1197,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_lte_multi_idx(self, obj):
+    def _parse_num_lte_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val < 0:
                 warnings.warn(
@@ -1227,9 +1206,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1252,9 +1229,7 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1291,7 +1266,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_gte(self, obj):
+    def _parse_num_gte(self, obj: Any) -> Tuple[str, str, str, str]:
         """Processes numeric greater-than-or-equal-to predicates."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val < 0:
@@ -1301,9 +1276,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1326,9 +1299,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1361,7 +1332,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_gte_multi_idx(self, obj):
+    def _parse_num_gte_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val < 0:
                 warnings.warn(
@@ -1370,9 +1341,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1395,9 +1364,7 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(
-                        obj
-                    ),
+                    """.format(obj),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1434,7 +1401,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_nan(self, obj):
+    def _parse_num_nan(self, obj: Any) -> Tuple[str, str, str, str]:
         """Processes predicates that check for NaN."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
@@ -1465,7 +1432,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_nan_multi_idx(self, obj):
+    def _parse_num_nan_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
                 None,
@@ -1497,7 +1464,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_not_nan(self, obj):
+    def _parse_num_not_nan(self, obj: Any) -> Tuple[str, str, str, str]:
         """Processes predicates that check for NaN."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
@@ -1528,7 +1495,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_not_nan_multi_idx(self, obj):
+    def _parse_num_not_nan_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
                 None,
@@ -1560,7 +1527,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_inf(self, obj):
+    def _parse_num_inf(self, obj: Any) -> Tuple[str, str, str, str]:
         """Processes predicates that check for Infinity."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
@@ -1591,7 +1558,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_inf_multi_idx(self, obj):
+    def _parse_num_inf_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
                 None,
@@ -1623,7 +1590,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_not_inf(self, obj):
+    def _parse_num_not_inf(self, obj: Any) -> Tuple[str, str, str, str]:
         """Processes predicates that check for not-Infinity."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
@@ -1654,7 +1621,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_not_inf_multi_idx(self, obj):
+    def _parse_num_not_inf_multi_idx(self, obj: Any) -> Tuple[str, str, str, str]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
                 None,
@@ -1687,7 +1654,9 @@ class StringQuery(Query):
         ]
 
 
-def parse_string_dialect(query_str, multi_index_mode="off"):
+def parse_string_dialect(
+    query_str: str, multi_index_mode: str = "off"
+) -> Union[StringQuery, CompoundQuery]:
     """Parse all types of String-based queries, including multi-queries that leverage
     the curly brace delimiters.
 

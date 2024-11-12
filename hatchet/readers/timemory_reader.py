@@ -7,6 +7,9 @@ import json
 import pandas as pd
 import os
 import glob
+import re
+from io import TextIOWrapper
+from typing import Any, Dict, List, Tuple, Union
 from hatchet.graphframe import GraphFrame
 from ..node import Node
 from ..graph import Graph
@@ -17,7 +20,12 @@ from ..util.timer import Timer
 class TimemoryReader:
     """Read in timemory JSON output"""
 
-    def __init__(self, input, select=None, **_kwargs):
+    def __init__(
+        self,
+        input: Union[str, TextIOWrapper, Dict],
+        select: List[str] = None,
+        **_kwargs,
+    ) -> None:
         """Arguments:
         input (str or file-stream or dict or None):
             Valid argument types are:
@@ -77,11 +85,13 @@ class TimemoryReader:
         else:
             raise TypeError("select must be None or list of string")
 
-    def create_graph(self):
+    def create_graph(self) -> GraphFrame:
         """Create graph and dataframe"""
         list_roots = []
 
-        def remove_keys(_dict, _keys):
+        def remove_keys(
+            _dict: Dict[str, Any], _keys: Union[str, List[str]]
+        ) -> Dict[str, Any]:
             """Remove keys from dictionary"""
             if isinstance(_keys, str):
                 if _keys in _dict:
@@ -91,13 +101,13 @@ class TimemoryReader:
                     _dict = remove_keys(_dict, _key)
             return _dict
 
-        def add_metrics(_dict):
+        def add_metrics(_dict: Dict[str, Any]) -> None:
             """Add any keys to metric_cols which don't already exist"""
             for key, itr in _dict.items():
                 if key not in self.metric_cols:
                     self.metric_cols.append(key)
 
-        def process_regex(_data):
+        def process_regex(_data: re.Match) -> Dict[str, str]:
             """Process the regex data for func/file/line info"""
             _tmp = {}
             if _data is not None and len(_data.groups()) > 0:
@@ -110,10 +120,8 @@ class TimemoryReader:
                         pass
             return _tmp if _tmp else None
 
-        def perform_regex(_prefix):
+        def perform_regex(_prefix: str) -> Dict[str, str]:
             """Performs a search for standard configurations of function + file + line"""
-            import re
-
             _tmp = None
             for _pattern in [
                 # [func][file]
@@ -134,7 +142,7 @@ class TimemoryReader:
                     break
             return _tmp if _tmp else None
 
-        def get_name_line_file(_prefix):
+        def get_name_line_file(_prefix: str) -> Tuple[Dict[str, str], Dict[str, str]]:
             """Get the standard set of dictionary entries.
             Also, parses the prefix for func-file-line info
             which is typically in the form:
@@ -164,7 +172,9 @@ class TimemoryReader:
                         _keys["name"] = "{}/{}".format(_keys["name"], _pdict["tail"])
             return (_keys, _extra)
 
-        def format_labels(_labels):
+        def format_labels(
+            _labels: Union[str, Dict[str, Any], List[str], Tuple[str, ...]],
+        ) -> List[str]:
             """Formats multi dimensional metrics which refer to multiple metrics
             stored in a 1D list.
 
@@ -186,7 +196,11 @@ class TimemoryReader:
                     _ret.append(_item.strip().replace(" ", "-").replace("_", "-"))
             return _ret
 
-        def match_labels_and_values(_metric_stats, _metric_label, _metric_type):
+        def match_labels_and_values(
+            _metric_stats: Dict[str, Any],
+            _metric_label: Union[str, List[str]],
+            _metric_type: str,
+        ) -> Dict[str, Any]:
             """Match metric labels with values and add '(inc)' if the metric type
             is inclusive.
 
@@ -214,7 +228,9 @@ class TimemoryReader:
                     _ret["{}.{}{}".format(_key, _metric_label, _metric_type)] = _item
             return _ret
 
-        def collapse_ids(_obj, _expect_scalar=False):
+        def collapse_ids(
+            _obj: Union[int, List[int]], _expect_scalar: bool = False
+        ) -> Union[str, int]:
             """node/rank/thread id may be int, array of ints, or None.
             When the entry is a list of integers (which happens when metric values
             are aggregates of multiple ranks/threads), this function generates a consistent
@@ -250,7 +266,13 @@ class TimemoryReader:
                 return f"{_obj}" if _expect_scalar else int(_obj)
             return None
 
-        def parse_node(_metric_name, _node_data, _hparent, _rank, _parent_callpath):
+        def parse_node(
+            _metric_name: str,
+            _node_data: Dict[str, Any],
+            _hparent: Node,
+            _rank: int,
+            _parent_callpath: Tuple[str],
+        ) -> None:
             """Create callpath_to_node_dict for one node and then call the function
             recursively on all children.
             """
@@ -374,7 +396,9 @@ class TimemoryReader:
                 for _child in _node_data["children"]:
                     parse_node(_metric_name, _child, _hnode, _rank, callpath)
 
-        def read_graph(_metric_name, ranks_data, _rank):
+        def read_graph(
+            _metric_name: str, ranks_data: List[List[Dict[str, Any]]], _rank: int
+        ) -> bool:
             """The layout of the graph at this stage
             is subject to slightly different structures
             based on whether distributed memory parallelism (DMP)
@@ -413,7 +437,11 @@ class TimemoryReader:
                 return True
             return False
 
-        def read_properties(properties, _metric_name, _metric_data):
+        def read_properties(
+            properties: Dict[str, Dict[str, Any]],
+            _metric_name: str,
+            _metric_data: Dict[str, Any],
+        ) -> None:
             """Read in the properties for a component. This
             contains information on the type of the component,
             a description, a unit_value relative to the
@@ -538,7 +566,6 @@ class TimemoryReader:
         if self.multiple_ranks or self.multiple_threads:
             dataframe = dataframe.unstack()
             for idx, row in dataframe.iterrows():
-
                 # There is always a valid name for an index.
                 # Take that valid name and assign to other ranks/rows.
                 name = row["name"][row["name"].first_valid_index()]
@@ -564,7 +591,7 @@ class TimemoryReader:
             graph, dataframe, exc_metrics, inc_metrics, self.default_metric
         )
 
-    def read(self):
+    def read(self) -> GraphFrame:
         """Read timemory json."""
 
         # check if the input is a dictionary.

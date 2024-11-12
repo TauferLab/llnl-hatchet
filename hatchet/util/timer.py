@@ -5,19 +5,19 @@
 
 from collections import OrderedDict
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import StringIO
 
 
 class Timer(object):
     """Simple phase timer with a context manager."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._phase = None
         self._start_time = None
         self._times = OrderedDict()
 
-    def start_phase(self, phase):
+    def start_phase(self, phase: str) -> timedelta:
         now = datetime.now()
         delta = None
 
@@ -29,7 +29,7 @@ class Timer(object):
         self._start_time = now
         return delta
 
-    def end_phase(self):
+    def end_phase(self) -> None:
         assert self._phase and self._start_time
 
         now = datetime.now()
@@ -42,7 +42,7 @@ class Timer(object):
         self._phase = None
         self._start_time = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         out = StringIO()
         out.write("Times:\n")
         for phase, delta in self._times.items():
@@ -50,7 +50,7 @@ class Timer(object):
         return out.getvalue()
 
     @contextmanager
-    def phase(self, name):
+    def phase(self, name: str):
         self.start_phase(name)
         yield
         self.end_phase()
