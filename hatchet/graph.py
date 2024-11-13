@@ -5,7 +5,7 @@
 
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from .node import Node, traversal_order, node_traversal_order
 
@@ -33,8 +33,8 @@ class Graph:
     def traverse(
         self,
         order: str = "pre",
-        attrs: Union[List[str], Tuple[str, ...], str] = None,
-        visited: Dict[int, int] = None,
+        attrs: Optional[Union[List[str], Tuple[str, ...], str]] = None,
+        visited: Optional[Dict[int, int]] = None,
     ) -> Iterable[Union[Node, Union[Tuple[Any, ...], Any]]]:
         """Preorder traversal of all roots of this Graph.
 
@@ -57,8 +57,8 @@ class Graph:
     def node_order_traverse(
         self,
         order: str = "pre",
-        attrs: Union[List[str], Tuple[str, ...], str] = None,
-        visited: Dict[int, int] = None,
+        attrs: Optional[Union[List[str], Tuple[str, ...], str]] = None,
+        visited: Optional[Dict[int, int]] = None,
     ) -> Iterable[Union[Node, Union[Tuple[Any, ...], Any]]]:
         """Preorder traversal of all roots of this Graph, sorting by "node order" column.
 
@@ -176,7 +176,7 @@ class Graph:
         self.merge_nodes(merges)
         return merges
 
-    def copy(self, old_to_new: Dict[Node, Node] = None) -> "Graph":
+    def copy(self, old_to_new: Optional[Dict[Node, Node]] = None) -> "Graph":
         """Create and return a copy of this graph.
 
         Arguments:
@@ -204,7 +204,9 @@ class Graph:
 
         return graph
 
-    def union(self, other: "Graph", old_to_new: Dict[Node, Node] = None) -> "Graph":
+    def union(
+        self, other: "Graph", old_to_new: Optional[Dict[Node, Node]] = None
+    ) -> "Graph":
         """Create the union of self and other and return it as a new Graph.
 
         This creates a new graph and does not modify self or other. The
@@ -395,7 +397,7 @@ class Graph:
         """Size of the graph in terms of number of nodes."""
         return sum(1 for _ in self.traverse())
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: "Graph") -> bool:
         """Check if two graphs have the same structure by comparing frame at each
         node.
         """
@@ -427,7 +429,7 @@ class Graph:
 
         return True
 
-    def __ne__(self, other: object) -> bool:
+    def __ne__(self, other: "Graph") -> bool:
         return not (self == other)
 
     @staticmethod

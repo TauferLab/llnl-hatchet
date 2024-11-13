@@ -13,6 +13,9 @@ authors = [
 ]
 license = "MIT"
 
+[tool.mypy]
+exclude = "hatchet/tests"
+
 [tool.ruff]
 line-length = 88
 target-version = 'py39'

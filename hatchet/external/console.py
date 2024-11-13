@@ -34,7 +34,7 @@ from ..version import __version__
 import pandas as pd
 import numpy as np
 import warnings
-from typing import Any, Dict, List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 from ..util.colormaps import ColorMaps
 from ..node import Node
 
@@ -47,7 +47,7 @@ class ConsoleRenderer:
 
     def render(
         self,
-        roots: Union[List[Node], Tuple[Node, ...]],
+        roots: Optional[Union[List[Node], Tuple[Node, ...]]],
         dataframe: pd.DataFrame,
         **kwargs,
     ) -> str:

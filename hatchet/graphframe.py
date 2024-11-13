@@ -9,7 +9,7 @@ import sys
 import traceback
 from collections import defaultdict
 from collections.abc import Callable
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from io import TextIOWrapper
 
 import multiprocess as mp
@@ -75,8 +75,8 @@ class GraphFrame:
         self,
         graph: Graph,
         dataframe: pd.DataFrame,
-        exc_metrics: List[str] = None,
-        inc_metrics: List[str] = None,
+        exc_metrics: Optional[List[str]] = None,
+        inc_metrics: Optional[List[str]] = None,
         default_metric: str = "time",
         metadata: Dict[str, Any] = {},
     ) -> None:
@@ -131,9 +131,9 @@ class GraphFrame:
     @staticmethod
     def from_hpctoolkit_latest(
         dirname: str,
-        max_depth: int = None,
-        min_percentage_of_application_time: int = None,
-        min_percentage_of_parent_time: int = None,
+        max_depth: Optional[int] = None,
+        min_percentage_of_application_time: Optional[int] = None,
+        min_percentage_of_parent_time: Optional[int] = None,
     ) -> "GraphFrame":
         """
         Read an HPCToolkit database directory into a new GraphFrame
@@ -159,7 +159,7 @@ class GraphFrame:
 
     @staticmethod
     def from_caliper(
-        filename_or_stream: Union[str, TextIOWrapper], query: str = None
+        filename_or_stream: Union[str, TextIOWrapper], query: Optional[str] = None
     ) -> "GraphFrame":
         """Read in a Caliper .cali or .json file.
 
@@ -220,7 +220,7 @@ class GraphFrame:
         ).read_timeseries(level=level)
 
     @staticmethod
-    def from_spotdb(db_key: Any, list_of_ids: List = None) -> "GraphFrame":
+    def from_spotdb(db_key: Any, list_of_ids: Optional[List] = None) -> "GraphFrame":
         """Read multiple graph frames from a SpotDB instance
 
         Args:
@@ -277,8 +277,8 @@ class GraphFrame:
 
     @staticmethod
     def from_timemory(
-        input: Union[str, TextIOWrapper, Dict[str, Any]] = None,
-        select: List[str] = None,
+        input: Optional[Union[str, TextIOWrapper, Dict[str, Any]]] = None,
+        select: Optional[List[str]] = None,
         **_kwargs,
     ) -> "GraphFrame":
         """Read in timemory data.
@@ -726,7 +726,7 @@ class GraphFrame:
     def subtree_sum(
         self,
         columns: List[str],
-        out_columns: List[str] = None,
+        out_columns: Optional[List[str]] = None,
         function: Callable = lambda x: x.sum(min_count=1),
     ):
         """Compute sum of elements in subtrees.  Valid only for trees.
@@ -789,7 +789,7 @@ class GraphFrame:
     def subgraph_sum(
         self,
         columns: List[str],
-        out_columns: List[str] = None,
+        out_columns: Optional[List[str]] = None,
         function: Callable = lambda x: x.sum(min_count=1),
     ):
         """Compute sum of elements in subgraphs.
@@ -852,7 +852,9 @@ class GraphFrame:
                     function(self.dataframe.loc[(subgraph_nodes), columns])
                 )
 
-    def generate_exclusive_columns(self, inc_metrics: Union[str, List[str]] = None):
+    def generate_exclusive_columns(
+        self, inc_metrics: Optional[Union[str, List[str]]] = None
+    ):
         """Generates exclusive metrics from available inclusive metrics.
         Arguments:
             inc_metrics (str, list, optional): Instead of generating the exclusive time for each inclusive metric, it is possible to specify those metrics manually. Defaults to None.
@@ -1025,8 +1027,8 @@ class GraphFrame:
     )
     def tree(
         self,
-        metric_column: str = None,
-        annotation_column: str = None,
+        metric_column: Optional[str] = None,
+        annotation_column: Optional[str] = None,
         precision: int = 3,
         name_column: str = "name",
         expand_name: bool = False,
@@ -1037,10 +1039,10 @@ class GraphFrame:
         highlight_name: bool = False,
         colormap: str = "RdYlGn",
         invert_colormap: bool = False,
-        colormap_annotations: Union[str, List, Dict] = None,
+        colormap_annotations: Optional[Union[str, List, Dict]] = None,
         render_header: bool = True,
-        min_value: int = None,
-        max_value: int = None,
+        min_value: Optional[int] = None,
+        max_value: Optional[int] = None,
     ) -> str:
         """Visualize the Hatchet graphframe as a tree
 
@@ -1109,7 +1111,7 @@ class GraphFrame:
 
     def to_dot(
         self,
-        metric: str = None,
+        metric: Optional[str] = None,
         name: str = "name",
         rank: int = 0,
         thread: int = 0,
@@ -1124,7 +1126,14 @@ class GraphFrame:
             self.graph.roots, self.dataframe, metric, name, rank, thread, threshold
         )
 
-    def to_flamegraph(self, metric=None, name="name", rank=0, thread=0, threshold=0.0):
+    def to_flamegraph(
+        self,
+        metric: Optional[Union[str, Tuple[str, ...]]] = None,
+        name: str = "name",
+        rank: int = 0,
+        thread: int = 0,
+        threshold: float = 0.0,
+    ) -> str:
         """Write the graph in the folded stack output required by FlameGraph
         http://www.brendangregg.com/flamegraphs.html
         """

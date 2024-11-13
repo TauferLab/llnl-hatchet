@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 from functools import total_ordering
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 
 @total_ordering
@@ -15,7 +15,7 @@ class Frame:
        attrs (dict): dictionary of attributes and values
     """
 
-    def __init__(self, attrs: Dict[str, Any] = None, **kwargs) -> None:
+    def __init__(self, attrs: Optional[Dict[str, Any]] = None, **kwargs) -> None:
         """Construct a frame from a dictionary, or from immediate kwargs.
 
         Arguments:
@@ -49,13 +49,13 @@ class Frame:
 
         self._tuple_repr = None
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: "Frame") -> bool:
         return self.tuple_repr == other.tuple_repr
 
-    def __lt__(self, other: object) -> bool:
+    def __lt__(self, other: "Frame") -> bool:
         return self.tuple_repr < other.tuple_repr
 
-    def __gt__(self, other: object) -> bool:
+    def __gt__(self, other: "Frame") -> bool:
         return self.tuple_repr > other.tuple_repr
 
     def __hash__(self) -> int:
@@ -81,7 +81,7 @@ class Frame:
     def __getitem__(self, name: str) -> Any:
         return self.attrs[name]
 
-    def get(self, name: str, default: Any = None):
+    def get(self, name: str, default: Optional[Any] = None):
         return self.attrs.get(name, default)
 
     def values(

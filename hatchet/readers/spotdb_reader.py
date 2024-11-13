@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Any, Dict, List
+from typing import Any, Dict, Optional, List
 
 import pandas as pd
 
@@ -150,7 +150,7 @@ class SpotDBReader:
     def __init__(
         self,
         db_key: Any,
-        list_of_ids: List = None,
+        list_of_ids: Optional[List] = None,
         default_metric: str = "Total time (inc)",
     ) -> None:
         """Initialize SpotDBReader

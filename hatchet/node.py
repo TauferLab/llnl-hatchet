@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 from functools import total_ordering
-from typing import Any, Dict, List, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 from collections.abc import Iterable
 
 from .frame import Frame
@@ -26,7 +26,11 @@ class Node:
     """A node in the graph. The node only stores its frame."""
 
     def __init__(
-        self, frame_obj: Frame, parent: "Node" = None, hnid: int = -1, depth: int = -1
+        self,
+        frame_obj: Frame,
+        parent: Optional["Node"] = None,
+        hnid: int = -1,
+        depth: int = -1,
     ) -> None:
         self.frame = frame_obj
         self._depth = depth
@@ -62,7 +66,7 @@ class Node:
                 paths.extend([path + node_value for path in parent_paths])
             return paths
 
-    def path(self, attrs: Dict[str, Any] = None) -> Tuple["Node", ...]:
+    def path(self, attrs: Optional[Dict[str, Any]] = None) -> Tuple["Node", ...]:
         """Path to this node from root. Raises if there are multiple paths.
 
         This is useful for trees (where each node only has one path), as
@@ -76,7 +80,10 @@ class Node:
         return paths[0]
 
     def dag_equal(
-        self, other: "Node", vs: Set[int] = None, vo: Set[int] = None
+        self,
+        other: "Node",
+        vs: Optional[Set[int]] = None,
+        vo: Optional[Set[int]] = None,
     ) -> bool:
         """Check if DAG rooted at self has the same structure as that rooted at
         other.
@@ -122,8 +129,8 @@ class Node:
     def traverse(
         self,
         order: str = "pre",
-        attrs: Union[List[str], Tuple[str, ...], str] = None,
-        visited: Dict[int, int] = None,
+        attrs: Optional[Union[List[str], Tuple[str, ...], str]] = None,
+        visited: Optional[Dict[int, int]] = None,
     ) -> Iterable[Union["Node", Union[Tuple[Any, ...], Any]]]:
         """Traverse the tree depth-first and yield each node.
 
@@ -163,8 +170,8 @@ class Node:
     def node_order_traverse(
         self,
         order: str = "pre",
-        attrs: Union[List[str], Tuple[str, ...], str] = None,
-        visited: Dict[int, int] = None,
+        attrs: Optional[Union[List[str], Tuple[str, ...], str]] = None,
+        visited: Optional[Dict[int, int]] = None,
     ) -> Iterable[Union["Node", Union[Tuple[Any, ...], Any]]]:
         """Traverse the tree depth-first and yield each node, sorting children by "node order".
 
@@ -206,13 +213,13 @@ class Node:
     def __hash__(self) -> int:
         return self._hatchet_nid
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: "Node") -> bool:
         return self._hatchet_nid == other._hatchet_nid
 
-    def __lt__(self, other: object) -> bool:
+    def __lt__(self, other: "Node") -> bool:
         return self._hatchet_nid < other._hatchet_nid
 
-    def __gt__(self, other: object) -> bool:
+    def __gt__(self, other: "Node") -> bool:
         return self._hatchet_nid > other._hatchet_nid
 
     def __str__(self) -> str:

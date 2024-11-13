@@ -9,7 +9,7 @@ import os
 import glob
 import re
 from io import TextIOWrapper
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from hatchet.graphframe import GraphFrame
 from ..node import Node
 from ..graph import Graph
@@ -23,7 +23,7 @@ class TimemoryReader:
     def __init__(
         self,
         input: Union[str, TextIOWrapper, Dict],
-        select: List[str] = None,
+        select: Optional[List[str]] = None,
         **_kwargs,
     ) -> None:
         """Arguments:
@@ -107,7 +107,7 @@ class TimemoryReader:
                 if key not in self.metric_cols:
                     self.metric_cols.append(key)
 
-        def process_regex(_data: re.Match) -> Dict[str, str]:
+        def process_regex(_data: re.Match) -> Optional[Dict[str, str]]:
             """Process the regex data for func/file/line info"""
             _tmp = {}
             if _data is not None and len(_data.groups()) > 0:
@@ -120,7 +120,7 @@ class TimemoryReader:
                         pass
             return _tmp if _tmp else None
 
-        def perform_regex(_prefix: str) -> Dict[str, str]:
+        def perform_regex(_prefix: str) -> Optional[Dict[str, str]]:
             """Performs a search for standard configurations of function + file + line"""
             _tmp = None
             for _pattern in [
@@ -230,7 +230,7 @@ class TimemoryReader:
 
         def collapse_ids(
             _obj: Union[int, List[int]], _expect_scalar: bool = False
-        ) -> Union[str, int]:
+        ) -> Optional[Union[str, int]]:
             """node/rank/thread id may be int, array of ints, or None.
             When the entry is a list of integers (which happens when metric values
             are aggregates of multiple ranks/threads), this function generates a consistent

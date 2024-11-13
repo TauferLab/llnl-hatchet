@@ -6,7 +6,7 @@
 import os
 import re
 import struct
-from typing import Dict, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import pandas as pd
 
@@ -17,7 +17,11 @@ from hatchet.node import Node
 
 
 def safe_unpack(
-    format: str, data: bytes, offset: int, index: int = None, index_length: int = None
+    format: str,
+    data: bytes,
+    offset: int,
+    index: Optional[int] = None,
+    index_length: Optional[int] = None,
 ) -> Tuple:
     length = struct.calcsize(format)
     if index:
@@ -52,9 +56,9 @@ class HPCToolkitReaderLatest:
     def __init__(
         self,
         dir_path: str,
-        max_depth: int = None,
-        min_application_percentage_time: int = None,
-        min_parent_percentage_time: int = None,
+        max_depth: Optional[int] = None,
+        min_application_percentage_time: Optional[int] = None,
+        min_parent_percentage_time: Optional[int] = None,
     ) -> None:
         self._dir_path = dir_path
         self._max_depth = max_depth
@@ -216,7 +220,7 @@ class HPCToolkitReaderLatest:
         return self._functions[pFunction]
 
     def _store_cct_node(
-        self, ctxId: int, frame: Dict, parent: Node = None, depth: int = 0
+        self, ctxId: int, frame: Dict, parent: Optional[Node] = None, depth: int = 0
     ) -> Node:
         node = Node(Frame(frame), parent=parent, hnid=ctxId, depth=depth)
         if parent is None:

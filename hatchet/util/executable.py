@@ -4,9 +4,10 @@
 # SPDX-License-Identifier: MIT
 
 import os
+from typing import Optional
 
 
-def which(executable: str) -> str:
+def which(executable: str) -> Optional[str]:
     """Finds an `executable` in the user's PATH like command-line which.
 
     Args:

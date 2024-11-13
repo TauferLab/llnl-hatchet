@@ -5,7 +5,7 @@
 
 from itertools import groupby
 import pandas as pd
-from typing import List, Set, Union
+from typing import List, Optional, Set, Union
 
 from .errors import InvalidQueryFilter
 from ..node import Node, traversal_order
@@ -88,7 +88,7 @@ class QueryEngine:
 
     def _match_0_or_more(
         self, query: Query, dframe: pd.DataFrame, node: Node, wcard_idx: int
-    ) -> List[List[Node]]:
+    ) -> Optional[List[List[Node]]]:
         """Process a "*" predicate in the query on a subgraph.
 
         Arguments:
@@ -136,7 +136,7 @@ class QueryEngine:
 
     def _match_1(
         self, query: Query, dframe: pd.DataFrame, node: Node, idx: int
-    ) -> List[List[Node]]:
+    ) -> Optional[List[List[Node]]]:
         """Process a "." predicate in the query on a subgraph.
 
         Arguments:
@@ -166,7 +166,7 @@ class QueryEngine:
 
     def _match_pattern(
         self, query: Query, dframe: pd.DataFrame, pattern_root: Node, match_idx: int
-    ) -> List[List[Node]]:
+    ) -> Optional[List[List[Node]]]:
         """Try to match the query pattern starting at the provided root node.
 
         Arguments:

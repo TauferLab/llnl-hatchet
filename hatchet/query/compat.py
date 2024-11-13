@@ -14,7 +14,7 @@ except ImportError:
 import sys
 import warnings
 from collections.abc import Callable
-from typing import List, Union
+from typing import List, Optional, Union
 
 from ..graphframe import GraphFrame
 from ..node import Node
@@ -131,7 +131,7 @@ class NaryQuery(AbstractQuery):
         true_query = self._get_new_query()
         return COMPATABILITY_ENGINE.apply(true_query, gf.graph, gf.dataframe)
 
-    def _get_new_query(self) -> CompoundQuery:
+    def _get_new_query(self) -> Union[Query, CompoundQuery]:
         """Gets all the underlying 'new-style' queries in this object.
 
         Returns:
@@ -279,7 +279,7 @@ class NotQuery(NaryQuery):
 class QueryMatcher(AbstractQuery):
     """Processes and applies base syntax queries and Object-based queries to GraphFrames."""
 
-    def __init__(self, query: Union[List, Query] = None) -> None:
+    def __init__(self, query: Optional[Union[List, Query]] = None) -> None:
         """Create a new QueryMatcher object.
 
         Arguments:
