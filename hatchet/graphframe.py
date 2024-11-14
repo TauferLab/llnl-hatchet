@@ -1092,7 +1092,7 @@ class GraphFrame:
 
         if color is False:
             try:
-                import IPython
+                import IPython  # type: ignore[import-not-found]
 
                 shell = IPython.get_ipython().__class__.__name__
             except ImportError:
