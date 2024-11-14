@@ -13,7 +13,11 @@ from pandas.api.types import (
 import re
 import sys
 from typing import Dict, List, Tuple, Union
-from collections.abc import Callable, Iterable
+
+if sys.version_info >= (3, 9):
+    from collections.abc import Callable, Iterable
+else:
+    from typing import Callable, Iterable
 
 from .errors import InvalidQueryPath, InvalidQueryFilter, MultiIndexModeMismatch
 from ..node import Node

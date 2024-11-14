@@ -10,8 +10,12 @@ import subprocess
 import os
 import math
 from typing import Any, Dict, List, Union, cast
-from collections.abc import Callable
 from io import TextIOWrapper
+
+if sys.version_info >= (3, 9):
+    from collections.abc import Callable
+else:
+    from typing import Callable
 
 import pandas as pd
 import numpy as np

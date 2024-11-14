@@ -57,9 +57,9 @@ class TimemoryReader:
         self.include_nid = True
         self.multiple_ranks = False
         self.multiple_threads = False
-        self.callpath_to_node_dict: Dict[
-            Tuple, Dict[str, Any]
-        ] = {}  # (callpath, rank, thread): <node_dict>
+        self.callpath_to_node_dict: Dict[Tuple, Dict[str, Any]] = (
+            {}
+        )  # (callpath, rank, thread): <node_dict>
         self.callpath_to_node: Dict[Tuple[str, ...], Node] = {}  # (callpath): <node>
 
         # the per_thread and per_rank settings make sure that

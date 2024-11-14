@@ -3,9 +3,14 @@
 #
 # SPDX-License-Identifier: MIT
 
+import sys
 from collections import defaultdict
-from collections.abc import Iterable
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
+
+if sys.version_info >= (3, 9):
+    from collections.abc import Iterable
+else:
+    from typing import Iterable
 
 from .node import Node, traversal_order, node_traversal_order
 

@@ -231,7 +231,9 @@ class HPCToolkitReaderLatest:
             "node": node,
             "name": (
                 # f"{frame['type']}: {frame['name']}"
-                frame["name"] if frame["name"] != 1 else "entry"
+                frame["name"]
+                if frame["name"] != 1
+                else "entry"
             ),
         }
 

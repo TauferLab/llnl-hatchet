@@ -3,8 +3,13 @@
 #
 # SPDX-License-Identifier: MIT
 
+import sys
 from typing import Any, Dict, List, cast
-from collections.abc import Iterable
+
+if sys.version_info >= (3, 9):
+    from collections.abc import Iterable
+else:
+    from typing import Iterable
 
 import pandas as pd
 

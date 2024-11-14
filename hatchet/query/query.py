@@ -3,8 +3,13 @@
 #
 # SPDX-License-Identifier: MIT
 
+import sys
 from typing import List, Tuple, Union
-from collections.abc import Callable, Iterator
+
+if sys.version_info >= (3, 9):
+    from collections.abc import Callable, Iterator
+else:
+    from typing import Callable, Iterator
 
 from .errors import InvalidQueryPath
 

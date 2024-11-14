@@ -4,16 +4,20 @@
 # SPDX-License-Identifier: MIT
 
 from numbers import Real
-import re
+import re  # noqa: F401
 import sys
-from collections.abc import Callable
-from typing import Any, Dict, Optional, List, Union, TYPE_CHECKING
+from typing import Any, Dict, Optional, List, Union
 import pandas as pd  # noqa: F401
 from pandas.api.types import is_numeric_dtype, is_string_dtype  # noqa: F401
 import numpy as np  # noqa: F401
 from textx import metamodel_from_str
 from textx.exceptions import TextXError
 import warnings
+
+if sys.version_info >= (3, 9):
+    from collections.abc import Callable
+else:
+    from typing import Callable
 
 from .errors import InvalidQueryPath, InvalidQueryFilter, RedundantQueryFilterWarning
 from .query import Query
@@ -728,7 +732,9 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -751,7 +757,9 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -800,7 +808,9 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -823,7 +833,9 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -870,7 +882,9 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -893,7 +907,9 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -935,7 +951,9 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -958,7 +976,9 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1005,7 +1025,9 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1028,7 +1050,9 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1070,7 +1094,9 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1093,7 +1119,9 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1140,7 +1168,9 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1163,7 +1193,9 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1205,7 +1237,9 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1228,7 +1262,9 @@ class StringQuery(Query):
                     This condition will always be false.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1275,7 +1311,9 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1298,7 +1336,9 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1340,7 +1380,9 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [
@@ -1363,7 +1405,9 @@ class StringQuery(Query):
                     This condition will always be true.
                     The statement that triggered this warning is:
                     {}
-                    """.format(obj),
+                    """.format(
+                        obj
+                    ),
                     RedundantQueryFilterWarning,
                 )
                 return [

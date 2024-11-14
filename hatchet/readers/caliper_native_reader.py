@@ -7,8 +7,13 @@
 import pandas as pd
 import numpy as np
 import os
+import sys
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
-from collections.abc import Callable
+
+if sys.version_info > (3, 9):
+    from collections.abc import Callable
+else:
+    from typing import Callable
 
 import caliperreader as cr
 
@@ -180,12 +185,9 @@ class CaliperNativeReader:
                                     or item in self.string_attributes
                                 ):
                                     try:
-                                        node_dict[item] = (
-                                            cast(
-                                                Callable,
-                                                self.__cali_type_dict[attr_type],
-                                            )(record[item]),
-                                        )
+                                        node_dict[item] = cast(
+                                            Callable, self.__cali_type_dict[attr_type]
+                                        )(record[item])
                                         if item not in self.record_data_cols:
                                             self.record_data_cols.append(item)
                                     except ValueError as e:

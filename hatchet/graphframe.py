@@ -8,9 +8,13 @@ import json
 import sys
 import traceback
 from collections import defaultdict
-from collections.abc import Callable, Iterable
 from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 from io import TextIOWrapper
+
+if sys.version_info >= (3, 9):
+    from collections.abc import Callable, Iterable
+else:
+    from typing import Callable, Iterable
 
 import multiprocess as mp
 import numpy as np

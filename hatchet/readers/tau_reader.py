@@ -6,9 +6,15 @@
 import re
 import os
 import glob
+import sys
 from typing import Any, Dict, List, Tuple, Union, cast
-from collections.abc import Iterable
 import pandas as pd
+
+if sys.version_info >= (3, 9):
+    from collections.abc import Iterable
+else:
+    from typing import Iterable
+
 import hatchet.graphframe
 from hatchet.node import Node
 from hatchet.graph import Graph

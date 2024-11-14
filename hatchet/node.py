@@ -3,9 +3,14 @@
 #
 # SPDX-License-Identifier: MIT
 
+import sys
 from functools import total_ordering
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
-from collections.abc import Iterable
+
+if sys.version_info >= (3, 9):
+    from collections.abc import Iterable
+else:
+    from typing import Iterable
 
 from .frame import Frame
 

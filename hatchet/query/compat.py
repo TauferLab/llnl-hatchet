@@ -7,8 +7,13 @@ from abc import abstractmethod, ABC
 
 import sys
 import warnings
-from collections.abc import Callable
 from typing import List, Optional, Union, cast, TYPE_CHECKING
+
+if sys.version_info >= (3, 9):
+    from collections.abc import Callable
+else:
+    from typing import Callable
+
 
 from ..node import Node
 from .query import Query
