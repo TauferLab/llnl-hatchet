@@ -8,8 +8,8 @@ import json
 import sys
 import traceback
 from collections import defaultdict
-from collections.abc import Callable
-from typing import Any, Dict, List, Optional, Tuple, Union
+from collections.abc import Callable, Iterable
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 from io import TextIOWrapper
 
 import multiprocess as mp
@@ -33,7 +33,7 @@ from .util.deprecated import deprecated_params
 from .util.dot import trees_to_dot
 
 try:
-    from .cython_modules.libs import graphframe_modules as _gfm_cy
+    from .cython_modules.libs import graphframe_modules as _gfm_cy  # type: ignore
 except ImportError:
     print("-" * 80)
     print(
@@ -134,7 +134,7 @@ class GraphFrame:
         max_depth: Optional[int] = None,
         min_percentage_of_application_time: Optional[int] = None,
         min_percentage_of_parent_time: Optional[int] = None,
-    ) -> "GraphFrame":
+    ) -> Optional["GraphFrame"]:
         """
         Read an HPCToolkit database directory into a new GraphFrame
 
@@ -202,7 +202,7 @@ class GraphFrame:
         level: str = "loop.start_iteration",
         native: bool = False,
         string_attributes: Union[List[str], str] = [],
-    ) -> "GraphFrame":
+    ) -> List["GraphFrame"]:
         """Read in a native Caliper timeseries `cali` file using Caliper's python reader.
 
         Args:
@@ -220,7 +220,9 @@ class GraphFrame:
         ).read_timeseries(level=level)
 
     @staticmethod
-    def from_spotdb(db_key: Any, list_of_ids: Optional[List] = None) -> "GraphFrame":
+    def from_spotdb(
+        db_key: Any, list_of_ids: Optional[List] = None
+    ) -> List["GraphFrame"]:
         """Read multiple graph frames from a SpotDB instance
 
         Args:
@@ -280,7 +282,7 @@ class GraphFrame:
         input: Optional[Union[str, TextIOWrapper, Dict[str, Any]]] = None,
         select: Optional[List[str]] = None,
         **_kwargs,
-    ) -> "GraphFrame":
+    ) -> Optional["GraphFrame"]:
         """Read in timemory data.
 
         Links:
@@ -354,14 +356,17 @@ class GraphFrame:
                 pass
         else:
             try:
-                import timemory
+                import timemory  # type: ignore[import-not-found]
 
-                TimemoryReader(timemory.get(hierarchy=True), select, **_kwargs).read()
+                return TimemoryReader(
+                    timemory.get(hierarchy=True), select, **_kwargs
+                ).read()
             except ImportError:
                 print(
                     "Error! timemory could not be imported. Provide filename, file stream, or dict."
                 )
                 raise
+        return None
 
     @staticmethod
     def from_literal(graph_dict: List[Dict]) -> "GraphFrame":
@@ -385,7 +390,11 @@ class GraphFrame:
 
         df = pd.DataFrame({"node": list(graph.traverse())})
         df["time"] = [1.0] * len(graph)
-        df["name"] = [n.frame["name"] for n in graph.traverse()]
+        name_col = []
+        for n in graph.traverse():
+            assert isinstance(n, Node)
+            name_col.append(n.frame["name"])
+        df["name"] = name_col
         df.set_index(["node"], inplace=True)
         df.sort_index(inplace=True)
 
@@ -406,9 +415,7 @@ class GraphFrame:
 
         return HDF5Reader(filename).read(**kwargs)
 
-    def to_hdf(
-        self, filename: str, key: str = "hatchet_graphframe", **kwargs
-    ) -> "GraphFrame":
+    def to_hdf(self, filename: str, key: str = "hatchet_graphframe", **kwargs) -> None:
         # import this lazily to avoid circular dependencies
         from .writers.hdf5_writer import HDF5Writer
 
@@ -455,7 +462,7 @@ class GraphFrame:
                 default_metric (str): N/A
                 metadata (dict): Copy of self's metadata
         """
-        node_clone = {}
+        node_clone: Dict[Node, Node] = {}
         graph_copy = self.graph.copy(node_clone)
         dataframe_copy = self.dataframe.copy()
 
@@ -562,7 +569,7 @@ class GraphFrame:
 
         elif isinstance(filter_obj, (list, str)) or is_hatchet_query(filter_obj):
             # use a callpath query to apply the filter
-            query = filter_obj
+            query: Union[Query, CompoundQuery]
             # If a raw Object-dialect query is provided (not already passed to ObjectQuery),
             # create a new ObjectQuery object.
             if isinstance(filter_obj, list):
@@ -573,7 +580,10 @@ class GraphFrame:
                 query = parse_string_dialect(filter_obj, multi_index_mode)
             # If an old-style query is provided, extract the underlying new-style query.
             elif issubclass(type(filter_obj), AbstractQuery):
-                query = filter_obj._get_new_query()
+                query = cast(AbstractQuery, filter_obj)._get_new_query()
+            else:
+                assert isinstance(filter_obj, (Query, CompoundQuery))
+                query = filter_obj
             query_matches = self.query_engine.apply(query, self.graph, self.dataframe)
             # match_set = list(set().union(*query_matches))
             # filtered_df = dataframe_copy.loc[dataframe_copy["node"].isin(match_set)]
@@ -619,7 +629,7 @@ class GraphFrame:
 
         # Maintain sets of connections to make for each old node.
         # Start with old -> new mapping and update as we traverse subgraphs.
-        connections = defaultdict(lambda: set())
+        connections: Dict[Node, Set[Node]] = defaultdict(lambda: set())
         connections.update({k: {v} for k, v in old_to_new.items()})
 
         new_roots = []  # list of new roots
@@ -657,7 +667,7 @@ class GraphFrame:
                 return connections[node]
 
         # run rewire for each root and make a new graph
-        visited = set()
+        visited: Set[Node] = set()
         for root in self.graph.roots:
             rewire(root, None, visited)
         graph = Graph(new_roots)
@@ -750,7 +760,8 @@ class GraphFrame:
         out_columns = self._init_sum_columns(columns, out_columns)
 
         # sum over the output columns
-        for node in self.graph.traverse(order="post"):
+        for trav_node in self.graph.traverse(order="post"):
+            node = cast(Node, trav_node)
             if node.children:
                 # TODO: need a better way of aggregating inclusive metrics when
                 # TODO: there is a multi-index
@@ -815,7 +826,8 @@ class GraphFrame:
             return
 
         out_columns = self._init_sum_columns(columns, out_columns)
-        for node in self.graph.traverse():
+        for trav_node in self.graph.traverse():
+            node = cast(Node, trav_node)
             subgraph_nodes = list(node.traverse())
             # TODO: need a better way of aggregating inclusive metrics when
             # TODO: there is a multi-index
@@ -893,13 +905,15 @@ class GraphFrame:
             # suffix) to the generation list.
             else:
                 generation_pairs.append((inc + " (exc)", inc))
+        node: Node
         # Consider each new exclusive metric and its corresponding inclusive metric
         for exc, inc in generation_pairs:
             # Process of obtaining inclusive data for a node differs if the DataFrame has an Index vs a MultiIndex
             if isinstance(self.dataframe.index, pd.MultiIndex):
-                new_data = {}
+                new_data: Dict[Union[Tuple[Any, ...], Node], int] = {}
                 # Traverse every node in the Graph
-                for node in self.graph.traverse():
+                for trav_node in self.graph.traverse():
+                    node = cast(Node, trav_node)
                     # Consider each unique portion of the MultiIndex corresponding to the current node
                     for non_node_idx in self.dataframe.loc[(node)].index.unique():
                         # If there's only 1 index level besides "node", add it to a 1-element list to ensure consistent typing
@@ -930,7 +944,7 @@ class GraphFrame:
                 # Create a basic Node-metric dict for the new exclusive metric
                 new_data = {n: -1 for n in self.dataframe.index.values}
                 # Traverse the graph
-                for node in self.graph.traverse():
+                for node in cast(Iterable[Node], self.graph.traverse()):
                     # Sum up the inclusive metric values of the current node's children
                     inc_sum = 0
                     for child in node.children:
@@ -994,7 +1008,7 @@ class GraphFrame:
         if self.graph is other.graph:
             return
 
-        node_map = {}
+        node_map: Dict[int, Node] = {}
         union_graph = self.graph.union(other.graph, node_map)
 
         self_index_names = self.dataframe.index.names
@@ -1043,7 +1057,7 @@ class GraphFrame:
         render_header: bool = True,
         min_value: Optional[int] = None,
         max_value: Optional[int] = None,
-    ) -> str:
+    ) -> Union[str, bytes]:
         """Visualize the Hatchet graphframe as a tree
 
         Arguments:
@@ -1122,8 +1136,9 @@ class GraphFrame:
         """
         if metric is None:
             metric = self.default_metric
+        graph_roots = cast(List[Node], self.graph.roots)
         return trees_to_dot(
-            self.graph.roots, self.dataframe, metric, name, rank, thread, threshold
+            graph_roots, self.dataframe, metric, name, rank, thread, threshold
         )
 
     def to_flamegraph(
@@ -1142,9 +1157,10 @@ class GraphFrame:
             metric = self.default_metric
 
         for root in self.graph.roots:
-            for hnode in root.traverse():
+            for hnode in cast(Iterable[Node], root.traverse()):
                 callpath = hnode.path()
                 for i in range(0, len(callpath) - 1):
+                    df_index: Union[Tuple[Node, int, int], Tuple[Node, int], Node]
                     if (
                         "rank" in self.dataframe.index.names
                         and "thread" in self.dataframe.index.names
@@ -1285,7 +1301,9 @@ class GraphFrame:
         return graph_literal
 
     def to_dict(self) -> Dict:
-        hatchet_dict = {}
+        hatchet_dict: Dict[
+            str, Union[List[Dict[int, Dict[str, Any]]], List[str], Dict]
+        ] = {}
 
         """
         Nodes: {hatchet_nid: {node data, children:[by-id]}}
@@ -1293,7 +1311,7 @@ class GraphFrame:
         graphs = []
         for root in self.graph.roots:
             formatted_graph_dict = {}
-            for n in root.traverse():
+            for n in cast(Iterable[Node], root.traverse()):
                 formatted_graph_dict[n._hatchet_nid] = {
                     "data": n.frame.attrs,
                     "children": [c._hatchet_nid for c in n.children],
@@ -1468,7 +1486,7 @@ class GraphFrame:
         """
         # create new nodes for each unique node in the old dataframe
         # length is equal to number of nodes in original graph
-        old_to_new = {}
+        old_to_new: Dict[Node, Node] = {}
 
         # list of new roots
         new_roots = []
@@ -1537,7 +1555,7 @@ class GraphFrame:
                 old_to_new[i] = super_node
 
         # reindex graph by traversing old graph
-        visited = set()
+        visited: Set[Node] = set()
         for root in self.graph.roots:
             reindex(root, None, visited)
 

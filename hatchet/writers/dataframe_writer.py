@@ -7,18 +7,7 @@ from hatchet.node import Node
 from hatchet.graphframe import GraphFrame
 import pandas as pd
 
-from abc import abstractmethod
-
-# TODO The ABC class was introduced in Python 3.4.
-# When support for earlier versions is (eventually) dropped,
-# this entire "try-except" block can be reduced to:
-# from abc import ABC
-try:
-    from abc import ABC
-except ImportError:
-    from abc import ABCMeta
-
-    ABC = ABCMeta("ABC", (object,), {"__slots__": ()})
+from abc import abstractmethod, ABC
 
 
 def _get_node_from_df_iloc(df: pd.DataFrame, ind: int) -> Node:

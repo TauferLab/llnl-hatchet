@@ -11,10 +11,7 @@ from typing import List
 
 from datetime import datetime
 
-try:
-    from StringIO import StringIO  # python2
-except ImportError:
-    from io import StringIO  # python3
+from io import StringIO  # python3
 import pstats
 
 

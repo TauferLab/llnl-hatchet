@@ -3,7 +3,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
+from collections.abc import Iterable
 
 import pandas as pd
 
@@ -61,7 +62,7 @@ class LiteralReader:
         (GraphFrame): graphframe containing data from dictionaries
     """
 
-    def __init__(self, graph_dict: Dict) -> None:
+    def __init__(self, graph_dict: List[Dict]) -> None:
         """Read from list of dictionaries.
 
         graph_dict (dict): List of dictionaries encoding nodes.
@@ -156,7 +157,7 @@ class LiteralReader:
         graph = Graph(list_roots)
 
         # test if nids are already loaded
-        if -1 in [n._hatchet_nid for n in graph.traverse()]:
+        if -1 in [n._hatchet_nid for n in cast(Iterable[Node], graph.traverse())]:
             graph.enumerate_traverse()
         else:
             graph.enumerate_depth()

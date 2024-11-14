@@ -3,8 +3,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Tuple
-from collections.abc import Callable
+from typing import List, Tuple, Union
+from collections.abc import Callable, Iterator
 
 from .errors import InvalidQueryPath
 
@@ -14,10 +14,10 @@ class Query(object):
 
     def __init__(self) -> None:
         """Create new Query"""
-        self.query_pattern = []
+        self.query_pattern: List[Tuple[Union[str, int], Callable]] = []
 
     def match(
-        self, quantifier: str = ".", predicate: Callable = lambda row: True
+        self, quantifier: Union[str, int] = ".", predicate: Callable = lambda row: True
     ) -> "Query":
         """Start a query with a root node described by the arguments.
 
@@ -34,7 +34,7 @@ class Query(object):
         return self
 
     def rel(
-        self, quantifier: str = ".", predicate: Callable = lambda row: True
+        self, quantifier: Union[str, int] = ".", predicate: Callable = lambda row: True
     ) -> "Query":
         """Add a new node to the end of the query.
 
@@ -53,7 +53,7 @@ class Query(object):
         return self
 
     def relation(
-        self, quantifer: str = ".", predicate: Callable = lambda row: True
+        self, quantifer: Union[str, int] = ".", predicate: Callable = lambda row: True
     ) -> "Query":
         """Alias to Query.rel. Add a new node to the end of the query.
 
@@ -70,12 +70,12 @@ class Query(object):
         """Returns the length of the query."""
         return len(self.query_pattern)
 
-    def __iter__(self) -> Tuple[str, Callable]:
+    def __iter__(self) -> Iterator[Tuple[Union[str, int], Callable]]:
         """Allows users to iterate over the Query like a list."""
         return iter(self.query_pattern)
 
     def _add_node(
-        self, quantifer: str = ".", predicate: Callable = lambda row: True
+        self, quantifer: Union[str, int] = ".", predicate: Callable = lambda row: True
     ) -> None:
         """Add a node to the query.
 

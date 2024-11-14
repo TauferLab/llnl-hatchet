@@ -34,7 +34,7 @@ from ..version import __version__
 import pandas as pd
 import numpy as np
 import warnings
-from typing import List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from ..util.colormaps import ColorMaps
 from ..node import Node
 
@@ -43,14 +43,19 @@ class ConsoleRenderer:
     def __init__(self, unicode: bool = False, color: bool = False) -> None:
         self.unicode = unicode
         self.color = color
-        self.visited = []
+        self.visited: List[Node] = []
+        self.colors_annotations_mapping: Optional[Union[List, Dict[str, Any]]] = None
+        self.colors: Optional[
+            Union["ConsoleRenderer.colors_enabled", "ConsoleRenderer.colors_disabled"]
+        ] = None
+        self.temporal_symbols: Dict[str, str] = {}
 
     def render(
         self,
         roots: Optional[Union[List[Node], Tuple[Node, ...]]],
         dataframe: pd.DataFrame,
         **kwargs,
-    ) -> str:
+    ) -> Union[str, bytes]:
         self.render_header = kwargs["render_header"]
 
         if self.render_header:
@@ -79,7 +84,7 @@ class ConsoleRenderer:
         self.max_value = kwargs["max_value"]
 
         if self.color:
-            self.colors = self.colors_enabled
+            self.colors = self.colors_enabled()
             # set the colormap based on user input
             self.colors.colormap = ColorMaps().get_colors(
                 self.colormap, self.invert_colormap
@@ -100,7 +105,7 @@ class ConsoleRenderer:
                 elif isinstance(self.colormap_annotations, dict):
                     self.colors_annotations_mapping = self.colormap_annotations
         else:
-            self.colors = self.colors_disabled
+            self.colors = self.colors_disabled()
 
         if isinstance(self.metric_columns, (str, tuple)):
             self.primary_metric = self.metric_columns
@@ -265,14 +270,13 @@ class ConsoleRenderer:
         if node_depth < self.depth:
             # set dataframe index based on whether rank and thread are part of
             # the MultiIndex
+            df_index: Union[Tuple[Node, int, int], Tuple[Node, int], Node] = node
             if "rank" in dataframe.index.names and "thread" in dataframe.index.names:
                 df_index = (node, self.rank, self.thread)
             elif "rank" in dataframe.index.names:
                 df_index = (node, self.rank)
             elif "thread" in dataframe.index.names:
                 df_index = (node, self.thread)
-            else:
-                df_index = node
 
             node_metric = dataframe.loc[df_index, self.primary_metric]
 
@@ -326,10 +330,12 @@ class ConsoleRenderer:
                 # no pattern column
                 elif self.colormap_annotations:
                     if isinstance(self.colormap_annotations, dict):
+                        assert isinstance(self.colors_annotations_mapping, Dict)
                         color_annotation = self.colors_annotations_mapping[
                             annotation_content
                         ]
                     else:
+                        assert isinstance(self.colors_annotations_mapping, List)
                         color_annotation = self.colors_annotations.colormap[
                             self.colors_annotations_mapping.index(annotation_content)
                             % len(self.colors_annotations.colormap)
@@ -441,7 +447,7 @@ class ConsoleRenderer:
             return self.colors.bg_white_255 + self.colors.dark_gray_255
 
     class colors_enabled:
-        colormap = []
+        colormap: List[str] = []
 
         blue = "\033[34m"
         cyan = "\033[36m"
@@ -456,9 +462,7 @@ class ConsoleRenderer:
         end = "\033[0m"
 
     class colors_disabled:
-        colormap = ["", "", "", "", "", "", ""]
+        colormap: List[str] = ["", "", "", "", "", "", ""]
 
         def __getattr__(self, key: str) -> str:
             return ""
-
-    colors_disabled = colors_disabled()

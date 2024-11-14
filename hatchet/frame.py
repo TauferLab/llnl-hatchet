@@ -47,9 +47,11 @@ class Frame:
         if "type" not in self.attrs:
             self.attrs["type"] = "None"
 
-        self._tuple_repr = None
+        self._tuple_repr: Optional[Tuple[Tuple[str, Any], ...]] = None
 
-    def __eq__(self, other: "Frame") -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Frame):
+            return NotImplemented
         return self.tuple_repr == other.tuple_repr
 
     def __lt__(self, other: "Frame") -> bool:
@@ -69,7 +71,7 @@ class Frame:
         return "Frame(%s)" % self
 
     @property
-    def tuple_repr(self) -> Tuple[Tuple[str, Any], ...]:
+    def tuple_repr(self) -> Optional[Tuple[Tuple[str, Any], ...]]:
         """Make a tuple of attributes and values based on reader."""
         if not self._tuple_repr:
             self._tuple_repr = tuple(sorted((k, v) for k, v in self.attrs.items()))

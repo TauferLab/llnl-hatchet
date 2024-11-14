@@ -14,9 +14,9 @@ def which(executable: str) -> Optional[str]:
         executable (str): executable to search for
     """
     path = os.environ.get("PATH", "/usr/sbin:/usr/bin:/sbin:/bin")
-    path = path.split(os.pathsep)
+    split_path = path.split(os.pathsep)
 
-    for directory in path:
+    for directory in split_path:
         exe = os.path.join(directory, executable)
         if os.path.isfile(exe) and os.access(exe, os.X_OK):
             return exe

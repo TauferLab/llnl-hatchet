@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, Optional, List, Set
 
 import pandas as pd
 
@@ -50,9 +50,9 @@ class SpotDatasetReader:
         self.regionprofile = regionprofile
         self.attr_info = attr_info
         self.metadata = metadata
-        self.df_data = []
-        self.roots = {}
-        self.metric_columns = set()
+        self.df_data: List[Dict[str, Any]] = []
+        self.roots: Dict[str, Node] = {}
+        self.metric_columns: Set[str] = set()
 
         self.timer = Timer()
 
@@ -178,7 +178,7 @@ class SpotDBReader:
         Returns:
             List of GraphFrames, one for each entry that was found
         """
-        import spotdb
+        import spotdb  # type: ignore[import-not-found]
 
         if isinstance(self.db_key, str):
             db = spotdb.connect(self.db_key)

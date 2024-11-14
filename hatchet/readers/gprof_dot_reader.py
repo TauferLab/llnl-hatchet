@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 import re
-from typing import List
+from typing import Dict, List, Union
 
 import pandas as pd
 import pydot
@@ -23,8 +23,8 @@ class GprofDotReader:
     def __init__(self, filename: str) -> None:
         self.dotfile = filename
 
-        self.name_to_hnode = {}
-        self.name_to_dict = {}
+        self.name_to_hnode: Dict[str, Node] = {}
+        self.name_to_dict: Dict[str, Dict[str, Union[str, Node]]] = {}
 
         self.timer = Timer()
 

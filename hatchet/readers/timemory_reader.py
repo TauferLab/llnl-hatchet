@@ -9,7 +9,7 @@ import os
 import glob
 import re
 from io import TextIOWrapper
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 from hatchet.graphframe import GraphFrame
 from ..node import Node
 from ..graph import Graph
@@ -22,7 +22,7 @@ class TimemoryReader:
 
     def __init__(
         self,
-        input: Union[str, TextIOWrapper, Dict],
+        timemory_input: Union[str, TextIOWrapper, Dict],
         select: Optional[List[str]] = None,
         **_kwargs,
     ) -> None:
@@ -47,18 +47,20 @@ class TimemoryReader:
             identical name/file/line/etc. info but from different ranks are not
             combined
         """
-        self.graph_dict = {"timemory": {}}
-        self.input = input
-        self.default_metric = None
+        self.graph_dict: Dict[str, Dict[str, Any]] = {"timemory": {}}
+        self.input = timemory_input
+        self.default_metric: Optional[str] = None
         self.timer = Timer()
-        self.metric_cols = []
-        self.properties = {}
+        self.metric_cols: List[str] = []
+        self.properties: Dict[str, Any] = {}
         self.include_tid = True
         self.include_nid = True
         self.multiple_ranks = False
         self.multiple_threads = False
-        self.callpath_to_node_dict = {}  # (callpath, rank, thread): <node_dict>
-        self.callpath_to_node = {}  # (callpath): <node>
+        self.callpath_to_node_dict: Dict[
+            Tuple, Dict[str, Any]
+        ] = {}  # (callpath, rank, thread): <node_dict>
+        self.callpath_to_node: Dict[Tuple[str, ...], Node] = {}  # (callpath): <node>
 
         # the per_thread and per_rank settings make sure that
         # squashing doesn't collapse the threads/ranks
@@ -271,7 +273,7 @@ class TimemoryReader:
             _node_data: Dict[str, Any],
             _hparent: Node,
             _rank: int,
-            _parent_callpath: Tuple[str],
+            _parent_callpath: Tuple[str, ...],
         ) -> None:
             """Create callpath_to_node_dict for one node and then call the function
             recursively on all children.
@@ -296,7 +298,7 @@ class TimemoryReader:
             _prop = self.properties[_metric_name]
             _frame_attrs, _extra = get_name_line_file(_node_data["node"]["prefix"])
 
-            callpath = _parent_callpath + (_frame_attrs["name"],)
+            callpath: Tuple[str, ...] = _parent_callpath + (_frame_attrs["name"],)
 
             # check if the node already exits.
             _hnode = self.callpath_to_node.get(callpath)
@@ -315,7 +317,9 @@ class TimemoryReader:
             # for the Frame(_keys) effectively circumvent Hatchet's
             # default behavior of combining similar thread/rank entries
             _tid_dict = _frame_attrs if self.per_thread else _extra
-            _rank_dict = _frame_attrs if self.per_rank else _extra
+            _rank_dict: Dict[str, Union[str, int]] = cast(
+                Dict[str, Union[str, int]], _frame_attrs if self.per_rank else _extra
+            )
 
             # handle the rank
             _rank_dict["rank"] = collapse_ids(_rank, self.per_rank)
@@ -324,10 +328,10 @@ class TimemoryReader:
                 self.include_nid = False
 
             # extract some relevant data
-            _tid_dict["thread"] = collapse_ids(
-                _node_data["node"]["tid"], self.per_thread
+            _tid_dict["thread"] = cast(
+                str, collapse_ids(_node_data["node"]["tid"], self.per_thread)
             )
-            _extra["pid"] = collapse_ids(_node_data["node"]["pid"], False)
+            _extra["pid"] = cast(str, collapse_ids(_node_data["node"]["pid"], False))
             _extra["count"] = _node_data["node"]["inclusive"]["entry"]["laps"]
 
             # check if there are multiple threads
@@ -598,7 +602,7 @@ class TimemoryReader:
         if isinstance(self.input, dict):
             self.graph_dict = self.input
         # check if the input is a directory and get '.tree.json' files if true.
-        elif os.path.isdir(self.input):
+        elif isinstance(self.input, str) and os.path.isdir(self.input):
             tree_files = glob.glob(self.input + "/*.tree.json")
             for file in tree_files:
                 # read all files that end with .tree.json.

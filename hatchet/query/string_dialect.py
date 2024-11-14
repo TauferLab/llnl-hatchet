@@ -7,7 +7,7 @@ from numbers import Real
 import re
 import sys
 from collections.abc import Callable
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Dict, Optional, List, Union, TYPE_CHECKING
 import pandas as pd  # noqa: F401
 from pandas.api.types import is_numeric_dtype, is_string_dtype  # noqa: F401
 import numpy as np  # noqa: F401
@@ -17,7 +17,6 @@ import warnings
 
 from .errors import InvalidQueryPath, InvalidQueryFilter, RedundantQueryFilterWarning
 from .query import Query
-from .compound import CompoundQuery
 
 
 # PEG grammar for the String-based dialect
@@ -124,12 +123,12 @@ class StringQuery(Query):
                     e.message
                 )
             )
-        self.wcards = []
-        self.wcard_pos = {}
+        self.wcards: List[List[Any]] = []
+        self.wcard_pos: Dict[str, int] = {}
         self._parse_path(model.path_expr)
-        self.filters = [[] for _ in self.wcards]
+        self.filters: List[List[Any]] = [[] for _ in self.wcards]
         self._parse_conditions(model.cond_expr)
-        self.lambda_filters = [None for _ in self.wcards]
+        self.lambda_filters: List[Optional[str]] = [None for _ in self.wcards]
         self._build_lambdas()
         self._build_query()
 
@@ -185,7 +184,7 @@ class StringQuery(Query):
         nodes = path_obj.path.nodes
         idx = len(self.wcards)
         for n in nodes:
-            new_node = [n.wcard, n.name]
+            new_node: List[Any] = [n.wcard, n.name]
             if n.wcard is None or n.wcard == "" or n.wcard == 0:
                 new_node[0] = "."
             self.wcards.append(new_node)
@@ -231,9 +230,7 @@ class StringQuery(Query):
             return True
         return False
 
-    def _parse_binary_cond(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_binary_cond(self, obj: Any) -> List[Optional[str]]:
         """Top level function for parsing binary predicates."""
         if cname(obj) == "AndCond":
             return self._parse_and_cond(obj)
@@ -241,31 +238,25 @@ class StringQuery(Query):
             return self._parse_or_cond(obj)
         raise RuntimeError("Bad Binary Condition")
 
-    def _parse_or_cond(self, obj: Any) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_or_cond(self, obj: Any) -> List[Optional[str]]:
         """Top level function for parsing predicates combined with logical OR."""
         converted_subcond = self._parse_unary_cond(obj.subcond)
         converted_subcond[0] = "or"
         return converted_subcond
 
-    def _parse_and_cond(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_and_cond(self, obj: Any) -> List[Optional[str]]:
         """Top level function for parsing predicates combined with logical AND."""
         converted_subcond = self._parse_unary_cond(obj.subcond)
         converted_subcond[0] = "and"
         return converted_subcond
 
-    def _parse_unary_cond(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_unary_cond(self, obj: Any) -> List[Optional[str]]:
         """Top level function for parsing unary predicates."""
         if cname(obj) == "NotCond":
             return self._parse_not_cond(obj)
         return self._parse_single_cond(obj)
 
-    def _parse_not_cond(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_not_cond(self, obj: Any) -> List[Optional[str]]:
         """Parse predicates containing the logical NOT operator."""
         converted_subcond = self._parse_single_cond(obj.subcond)
         converted_subcond[2] = "not {}".format(converted_subcond[2])
@@ -273,16 +264,14 @@ class StringQuery(Query):
 
     def _run_method_based_on_multi_idx_mode(
         self, method_name: str, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    ) -> List[Optional[str]]:
         real_method_name = method_name
         if self.multi_index_mode != "off":
             real_method_name = method_name + "_multi_idx"
         method = eval("StringQuery.{}".format(real_method_name))
         return method(self, obj)
 
-    def _parse_single_cond(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_single_cond(self, obj: Any) -> List[Optional[str]]:
         """Top level function for parsing individual numeric or string predicates."""
         if self._is_str_cond(obj):
             return self._parse_str(obj)
@@ -298,7 +287,7 @@ class StringQuery(Query):
             return self._run_method_based_on_multi_idx_mode("_parse_not_leaf", obj)
         raise RuntimeError("Bad Single Condition")
 
-    def _parse_none(self, obj: Any) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_none(self, obj: Any) -> List[Optional[str]]:
         """Parses 'property IS NONE'."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
@@ -330,9 +319,7 @@ class StringQuery(Query):
             return predicate + ".any()"
         return predicate + ".all()"
 
-    def _parse_none_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_none_multi_idx(self, obj: Any) -> List[Optional[str]]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
                 None,
@@ -360,9 +347,7 @@ class StringQuery(Query):
             None,
         ]
 
-    def _parse_not_none(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_not_none(self, obj: Any) -> List[Optional[str]]:
         """Parses 'property IS NOT NONE'."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
@@ -389,9 +374,7 @@ class StringQuery(Query):
             None,
         ]
 
-    def _parse_not_none_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_not_none_multi_idx(self, obj: Any) -> List[Optional[str]]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
                 None,
@@ -419,7 +402,7 @@ class StringQuery(Query):
             None,
         ]
 
-    def _parse_leaf(self, obj: Any) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_leaf(self, obj: Any) -> List[Optional[str]]:
         """Parses 'node IS LEAF'."""
         return [
             None,
@@ -428,9 +411,7 @@ class StringQuery(Query):
             None,
         ]
 
-    def _parse_leaf_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_leaf_multi_idx(self, obj: Any) -> List[Optional[str]]:
         return [
             None,
             obj.name,
@@ -438,9 +419,7 @@ class StringQuery(Query):
             None,
         ]
 
-    def _parse_not_leaf(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_not_leaf(self, obj: Any) -> List[Optional[str]]:
         """Parses 'node IS NOT LEAF'."""
         return [
             None,
@@ -449,9 +428,7 @@ class StringQuery(Query):
             None,
         ]
 
-    def _parse_not_leaf_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_not_leaf_multi_idx(self, obj: Any) -> List[Optional[str]]:
         return [
             None,
             obj.name,
@@ -487,7 +464,7 @@ class StringQuery(Query):
             return True
         return False
 
-    def _parse_str(self, obj: Any) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_str(self, obj: Any) -> List[Optional[str]]:
         """Function that redirects processing of string predicates
         to the correct function.
         """
@@ -505,7 +482,7 @@ class StringQuery(Query):
             return self._run_method_based_on_multi_idx_mode("_parse_str_match", obj)
         raise RuntimeError("Bad String Op Class")
 
-    def _parse_str_eq(self, obj: Any) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_str_eq(self, obj: Any) -> List[Optional[str]]:
         """Processes string equivalence predicates."""
         return [
             None,
@@ -525,9 +502,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_eq_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_str_eq_multi_idx(self, obj: Any) -> List[Optional[str]]:
         return [
             None,
             obj.name,
@@ -548,9 +523,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_starts_with(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_str_starts_with(self, obj: Any) -> List[Optional[str]]:
         """Processes string 'startswith' predicates."""
         return [
             None,
@@ -570,9 +543,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_starts_with_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_str_starts_with_multi_idx(self, obj: Any) -> List[Optional[str]]:
         return [
             None,
             obj.name,
@@ -593,9 +564,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_ends_with(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_str_ends_with(self, obj: Any) -> List[Optional[str]]:
         """Processes string 'endswith' predicates."""
         return [
             None,
@@ -615,9 +584,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_ends_with_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_str_ends_with_multi_idx(self, obj: Any) -> List[Optional[str]]:
         return [
             None,
             obj.name,
@@ -638,9 +605,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_contains(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_str_contains(self, obj: Any) -> List[Optional[str]]:
         """Processes string 'contains' predicates."""
         return [
             None,
@@ -660,9 +625,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_contains_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_str_contains_multi_idx(self, obj: Any) -> List[Optional[str]]:
         return [
             None,
             obj.name,
@@ -683,9 +646,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_match(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_str_match(self, obj: Any) -> List[Optional[str]]:
         """Processes string regex match predicates."""
         return [
             None,
@@ -705,9 +666,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_str_match_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_str_match_multi_idx(self, obj: Any) -> List[Optional[str]]:
         return [
             None,
             obj.name,
@@ -728,7 +687,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num(self, obj: Any) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num(self, obj: Any) -> List[Optional[str]]:
         """Function that redirects processing of numeric predicates
         to the correct function.
         """
@@ -752,7 +711,7 @@ class StringQuery(Query):
             return self._run_method_based_on_multi_idx_mode("_parse_num_not_inf", obj)
         raise RuntimeError("Bad Number Op Class")
 
-    def _parse_num_eq(self, obj: Any) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_eq(self, obj: Any) -> List[Optional[str]]:
         """Processes numeric equivalence predicates."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val == -1:
@@ -825,9 +784,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_eq_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_eq_multi_idx(self, obj: Any) -> List[Optional[str]]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val == -1:
                 return [
@@ -903,7 +860,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_lt(self, obj: Any) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_lt(self, obj: Any) -> List[Optional[str]]:
         """Processes numeric less-than predicates."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val < 0:
@@ -969,9 +926,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_lt_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_lt_multi_idx(self, obj: Any) -> List[Optional[str]]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val < 0:
                 warnings.warn(
@@ -1040,7 +995,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_gt(self, obj: Any) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_gt(self, obj: Any) -> List[Optional[str]]:
         """Processes numeric greater-than predicates."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val < 0:
@@ -1106,9 +1061,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_gt_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_gt_multi_idx(self, obj: Any) -> List[Optional[str]]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val < 0:
                 warnings.warn(
@@ -1177,7 +1130,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_lte(self, obj: Any) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_lte(self, obj: Any) -> List[Optional[str]]:
         """Processes numeric less-than-or-equal-to predicates."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val < 0:
@@ -1243,9 +1196,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_lte_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_lte_multi_idx(self, obj: Any) -> List[Optional[str]]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val < 0:
                 warnings.warn(
@@ -1314,7 +1265,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_gte(self, obj: Any) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_gte(self, obj: Any) -> List[Optional[str]]:
         """Processes numeric greater-than-or-equal-to predicates."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val < 0:
@@ -1380,9 +1331,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_gte_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_gte_multi_idx(self, obj: Any) -> List[Optional[str]]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             if obj.val < 0:
                 warnings.warn(
@@ -1451,7 +1400,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_nan(self, obj: Any) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_nan(self, obj: Any) -> List[Optional[str]]:
         """Processes predicates that check for NaN."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
@@ -1482,9 +1431,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_nan_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_nan_multi_idx(self, obj: Any) -> List[Optional[str]]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
                 None,
@@ -1516,9 +1463,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_not_nan(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_not_nan(self, obj: Any) -> List[Optional[str]]:
         """Processes predicates that check for NaN."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
@@ -1549,9 +1494,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_not_nan_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_not_nan_multi_idx(self, obj: Any) -> List[Optional[str]]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
                 None,
@@ -1583,7 +1526,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_inf(self, obj: Any) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_inf(self, obj: Any) -> List[Optional[str]]:
         """Processes predicates that check for Infinity."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
@@ -1614,9 +1557,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_inf_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_inf_multi_idx(self, obj: Any) -> List[Optional[str]]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
                 None,
@@ -1648,9 +1589,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_not_inf(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_not_inf(self, obj: Any) -> List[Optional[str]]:
         """Processes predicates that check for not-Infinity."""
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
@@ -1681,9 +1620,7 @@ class StringQuery(Query):
             ),
         ]
 
-    def _parse_num_not_inf_multi_idx(
-        self, obj: Any
-    ) -> Tuple[Optional[str], str, str, Optional[str]]:
+    def _parse_num_not_inf_multi_idx(self, obj: Any) -> List[Optional[str]]:
         if len(obj.prop.ids) == 1 and obj.prop.ids[0] == "depth":
             return [
                 None,
@@ -1714,162 +1651,3 @@ class StringQuery(Query):
                 else "'{}'".format(obj.prop.ids[0])
             ),
         ]
-
-
-def parse_string_dialect(
-    query_str: str, multi_index_mode: str = "off"
-) -> Union[StringQuery, CompoundQuery]:
-    """Parse all types of String-based queries, including multi-queries that leverage
-    the curly brace delimiters.
-
-    Arguments:
-        query_str (str): the String-based query to be parsed
-
-    Returns:
-        (Query or CompoundQuery): A Hatchet query object representing the String-based query
-    """
-    # TODO Check if there's a way to prevent curly braces in a string
-    #      from being captured
-
-    # Find the number of curly brace-delimited regions in the query
-    query_str = query_str.strip()
-    curly_brace_elems = re.findall(r"\{(.*?)\}", query_str)
-    num_curly_brace_elems = len(curly_brace_elems)
-    # If there are no curly brace-delimited regions, just pass the query
-    # off to the CypherQuery constructor
-    if num_curly_brace_elems == 0:
-        if sys.version_info[0] == 2:
-            query_str = query_str.decode("utf-8")
-        return StringQuery(query_str, multi_index_mode)
-    # Create an iterator over the curly brace-delimited regions
-    curly_brace_iter = re.finditer(r"\{(.*?)\}", query_str)
-    # Will store curly brace-delimited regions in the WHERE clause
-    condition_list = None
-    # Will store curly brace-delimited regions that contain entire
-    # mid-level queries (MATCH clause and WHERE clause)
-    query_list = None
-    # If entire queries are in brace-delimited regions, store the indexes
-    # of the regions here so we don't consider brace-delimited regions
-    # within the already-captured region.
-    query_idxes = None
-    # Store which compound queries to apply to the curly brace-delimited regions
-    compound_ops = []
-    for i, match in enumerate(curly_brace_iter):
-        # Get the substring within curly braces
-        substr = query_str[match.start() + 1 : match.end() - 1]
-        substr = substr.strip()
-        # If an entire query (MATCH + WHERE) is within curly braces,
-        # add the query to "query_list", and add the indexes corresponding
-        # to the query to "query_idxes"
-        if substr.startswith("MATCH"):
-            if query_list is None:
-                query_list = []
-            if query_idxes is None:
-                query_idxes = []
-            query_list.append(substr)
-            query_idxes.append((match.start(), match.end()))
-        # If the curly brace-delimited region contains only parts of a
-        # WHERE clause, first, check if the region is within another
-        # curly brace delimited region. If it is, do nothing (it will
-        # be handled later). Otherwise, add the region to "condition_list"
-        elif re.match(r"[a-zA-Z0-9_]+\..*", substr) is not None:
-            is_encapsulated_region = False
-            if query_idxes is not None:
-                for s, e in query_idxes:
-                    if match.start() >= s or match.end() <= e:
-                        is_encapsulated_region = True
-                        break
-            if is_encapsulated_region:
-                continue
-            if condition_list is None:
-                condition_list = []
-            condition_list.append(substr)
-        # If the curly brace-delimited region is neither a whole query
-        # or part of a WHERE clause, raise an error
-        else:
-            raise ValueError("Invalid grouping (with curly braces) within the query")
-        # If there is a compound operator directly after the curly brace-delimited region,
-        # capture the type of operator, and store the type in "compound_ops"
-        if i + 1 < num_curly_brace_elems:
-            rest_substr = query_str[match.end() :]
-            rest_substr = rest_substr.strip()
-            if rest_substr.startswith("AND"):
-                compound_ops.append("AND")
-            elif rest_substr.startswith("OR"):
-                compound_ops.append("OR")
-            elif rest_substr.startswith("XOR"):
-                compound_ops.append("XOR")
-            else:
-                raise ValueError("Invalid compound operator type found!")
-    # Each call to this function should only consider one of the full query or
-    # WHERE clause versions at a time. If both types were captured, raise an error
-    # because some type of internal logic issue occured.
-    if condition_list is not None and query_list is not None:
-        raise ValueError(
-            "Curly braces must be around either a full mid-level query or a set of conditions in a single mid-level query"
-        )
-    # This branch is for the WHERE clause version
-    if condition_list is not None:
-        # Make sure you correctly gathered curly brace-delimited regions and
-        # compound operators
-        if len(condition_list) != len(compound_ops) + 1:
-            raise ValueError(
-                "Incompatible number of curly brace elements and compound operators"
-            )
-        # Get the MATCH clause that will be shared across the subqueries
-        match_comp_obj = re.search(r"MATCH\s+(?P<match_field>.*)\s+WHERE", query_str)
-        match_comp = match_comp_obj.group("match_field")
-        # Iterate over the compound operators
-        full_query = None
-        for i, op in enumerate(compound_ops):
-            # If in the first iteration, set the initial query as a CypherQuery where
-            # the MATCH clause is the shared match clause and the WHERE clause is the
-            # first curly brace-delimited region
-            if i == 0:
-                query1 = "MATCH {} WHERE {}".format(match_comp, condition_list[i])
-                if sys.version_info[0] == 2:
-                    query1 = query1.decode("utf-8")
-                full_query = StringQuery(query1, multi_index_mode)
-            # Get the next query as a CypherQuery where
-            # the MATCH clause is the shared match clause and the WHERE clause is the
-            # next curly brace-delimited region
-            next_query = "MATCH {} WHERE {}".format(match_comp, condition_list[i + 1])
-            if sys.version_info[0] == 2:
-                next_query = next_query.decode("utf-8")
-            next_query = StringQuery(next_query, multi_index_mode)
-            # Add the next query to the full query using the compound operator
-            # currently being considered
-            if op == "AND":
-                full_query = full_query & next_query
-            elif op == "OR":
-                full_query = full_query | next_query
-            else:
-                full_query = full_query ^ next_query
-        return full_query
-    # This branch is for the full query version
-    else:
-        # Make sure you correctly gathered curly brace-delimited regions and
-        # compound operators
-        if len(query_list) != len(compound_ops) + 1:
-            raise ValueError(
-                "Incompatible number of curly brace elements and compound operators"
-            )
-        # Iterate over the compound operators
-        full_query = None
-        for i, op in enumerate(compound_ops):
-            # If in the first iteration, set the initial query as the result
-            # of recursively calling this function on the first curly brace-delimited region
-            if i == 0:
-                full_query = parse_string_dialect(query_list[i])
-            # Get the next query by recursively calling this function
-            # on the next curly brace-delimited region
-            next_query = parse_string_dialect(query_list[i + 1])
-            # Add the next query to the full query using the compound operator
-            # currently being considered
-            if op == "AND":
-                full_query = full_query & next_query
-            elif op == "OR":
-                full_query = full_query | next_query
-            else:
-                full_query = full_query ^ next_query
-        return full_query

@@ -127,7 +127,7 @@ class ColorMaps:
             self.colors = self.Spectral.copy()
         else:
             raise ValueError(
-                self.colormap
+                colormap
                 + " is an incorrect colormap. Select one BrBG, PiYg, PRGn,"
                 + " PuOr, RdBu, RdGy, RdYlBu, RdYlGn, or Spectral."
             )

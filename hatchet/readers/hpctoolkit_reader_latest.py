@@ -6,7 +6,7 @@
 import os
 import re
 import struct
-from typing import Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 
@@ -68,18 +68,18 @@ class HPCToolkitReaderLatest:
         self._meta_file = None
         self._profile_file = None
 
-        self._functions = {}
-        self._source_files = {}
-        self._load_modules = {}
-        self._metric_descriptions = {}
-        self._summary_profile = {}
+        self._functions: Dict[int, Dict[str, Any]] = {}
+        self._source_files: Dict[int, Dict[str, Any]] = {}
+        self._load_modules: Dict[int, Dict[str, Any]] = {}
+        self._metric_descriptions: Dict = {}
+        self._summary_profile: Dict = {}
 
-        self._time_metric = None
-        self._inclusive_metrics = {}
-        self._exclusive_metrics = {}
+        self._time_metric: Optional[str] = None
+        self._inclusive_metrics: Dict = {}
+        self._exclusive_metrics: Dict = {}
 
-        self._cct_roots = []
-        self._metrics_table = []
+        self._cct_roots: List[Node] = []
+        self._metrics_table: List[Dict[str, Any]] = []
 
         for file_path in os.listdir(self._dir_path):
             if file_path.split(".")[-1] == "db":
@@ -278,7 +278,7 @@ class HPCToolkitReaderLatest:
             ):
                 continue
 
-            frame = {"type": NODE_TYPE_MAPPING[lexicalType]}
+            frame: Dict[str, Union[str, int]] = {"type": NODE_TYPE_MAPPING[lexicalType]}
 
             if nFlexWords:
                 if lexicalType == 0:
@@ -365,7 +365,7 @@ class HPCToolkitReaderLatest:
 
     def _read_cct(
         self,
-    ) -> None:
+    ) -> Optional[GraphFrame]:
         with open(self._meta_file, "rb") as file:
             meta_db = file.read()
 
@@ -410,7 +410,7 @@ class HPCToolkitReaderLatest:
                 if im in table.columns.tolist():
                     inclusive_metrics.append(im)
 
-            for em in (list(self._exclusive_metrics.values()),):
+            for em in list(self._exclusive_metrics.values()):
                 if em in table.columns.tolist():
                     exclusive_metrics.append(em)
 
@@ -424,8 +424,9 @@ class HPCToolkitReaderLatest:
 
             print("DATA IMPORTED")
             return graphframe
+        return None
 
-    def read(self) -> GraphFrame:
+    def read(self) -> Optional[GraphFrame]:
         self._read_metric_descriptions()
         self._read_summary_profile()
         return self._read_cct()

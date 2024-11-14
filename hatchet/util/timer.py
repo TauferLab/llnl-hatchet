@@ -7,15 +7,16 @@ from collections import OrderedDict
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from io import StringIO
+from typing import Optional
 
 
 class Timer(object):
     """Simple phase timer with a context manager."""
 
     def __init__(self) -> None:
-        self._phase = None
-        self._start_time = None
-        self._times = OrderedDict()
+        self._phase: Optional[str] = None
+        self._start_time: Optional[datetime] = None
+        self._times: OrderedDict = OrderedDict()
 
     def start_phase(self, phase: str) -> timedelta:
         now = datetime.now()

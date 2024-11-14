@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 import json
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import pandas as pd
 
@@ -17,9 +17,9 @@ from hatchet.frame import Frame
 class PyinstrumentReader:
     def __init__(self, filename: str) -> None:
         self.pyinstrument_json_filename = filename
-        self.graph_dict = {}
-        self.list_roots = []
-        self.node_dicts = []
+        self.graph_dict: Dict[str, Any] = {}
+        self.list_roots: List[Node] = []
+        self.node_dicts: List[Dict[str, Any]] = []
 
     def create_graph(self) -> Graph:
         def parse_node_literal(child_dict: Dict[str, Any], hparent: Node) -> None:

@@ -10,7 +10,7 @@ from collections.abc import Iterable
 from .frame import Frame
 
 
-def traversal_order(node: "Node") -> Tuple(Frame, int):
+def traversal_order(node: "Node") -> Tuple[Frame, int]:
     """Deterministic key function for sorting nodes in traversals."""
     return (node.frame, id(node))
 
@@ -36,10 +36,10 @@ class Node:
         self._depth = depth
         self._hatchet_nid = hnid
 
-        self.parents = []
+        self.parents: List["Node"] = []
         if parent is not None:
             self.add_parent(parent)
-        self.children = []
+        self.children: List["Node"] = []
 
     def add_parent(self, node: "Node"):
         """Adds a parent to this node's list of parents."""
@@ -76,7 +76,7 @@ class Node:
         """
         paths = self.paths()
         if len(paths) > 1:
-            raise MultiplePathError("Node has more than one path: " % paths)
+            raise MultiplePathError("Node has more than one path: " + str(paths))
         return paths[0]
 
     def dag_equal(
@@ -213,7 +213,9 @@ class Node:
     def __hash__(self) -> int:
         return self._hatchet_nid
 
-    def __eq__(self, other: "Node") -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Node):
+            return NotImplemented
         return self._hatchet_nid == other._hatchet_nid
 
     def __lt__(self, other: "Node") -> bool:
@@ -233,10 +235,7 @@ class Node:
     @classmethod
     def from_lists(
         cls,
-        lists: Union[
-            List[str, "Node", Union[List, Tuple]],
-            Tuple[str, "Node", Union[List, Tuple]],
-        ],
+        lists: Tuple[str, "Node", Union[List, Tuple]],
     ) -> "Node":
         r"""Construct a hierarchy of nodes from recursive lists.
 

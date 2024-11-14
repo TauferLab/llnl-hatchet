@@ -8,7 +8,7 @@ import struct
 import re
 import os
 import traceback
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -18,11 +18,11 @@ import multiprocessing.sharedctypes
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
-    import xml.etree.ElementTree as ET
+    import xml.etree.ElementTree as ET  # type: ignore[no-redef]
 
 # cython imports
 try:
-    import hatchet.cython_modules.libs.reader_modules as _crm
+    import hatchet.cython_modules.libs.reader_modules as _crm  # type: ignore
 except ImportError:
     print("-" * 80)
     print(
@@ -40,7 +40,8 @@ from hatchet.util.timer import Timer
 from hatchet.frame import Frame
 
 
-src_file = 0
+src_file: Optional[str] = None
+shared_metrics: Optional[Any] = None
 
 
 # TODO replace the "Any" type hint with numpy.typing.ArrayLike
@@ -51,7 +52,7 @@ def init_shared_array(buf_: Any) -> None:
     shared_metrics = buf_
 
 
-def read_metricdb_file(args: Tuple[str, int, int, int, int, Tuple[int, int]]) -> None:
+def read_metricdb_file(args: Tuple[str, int, int, int, int, List[int]]) -> None:
     """Read a single metricdb file into a 1D array."""
     (
         filename,
@@ -85,7 +86,7 @@ def read_metricdb_file(args: Tuple[str, int, int, int, int, Tuple[int, int]]) ->
             rank * num_threads_per_rank + num_cpu_threads_per_rank + (thread - 500)
         ) * num_nodes
 
-    arr[rank_offset : rank_offset + num_nodes, :num_metrics].flat = arr1d.flat
+    arr[rank_offset : rank_offset + num_nodes, :num_metrics].flat = arr1d.flat  # type: ignore[misc]
     arr[rank_offset : rank_offset + num_nodes, num_metrics] = range(1, num_nodes + 1)
     arr[rank_offset : rank_offset + num_nodes, num_metrics + 1] = rank
     arr[rank_offset : rank_offset + num_nodes, num_metrics + 2] = thread
@@ -136,17 +137,17 @@ class HPCToolkitReader:
                 self.num_metrics = struct.unpack(">i", metricdb.read(4))[0]
             else:
                 raise ValueError(
-                    "HPCToolkitReader doesn't support endian '%s'" % endian
+                    "HPCToolkitReader doesn't support endian '{:r}'".format(endian)
                 )
 
-        self.load_modules = {}
-        self.src_files = {}
-        self.procedure_names = {}
-        self.metric_names = {}
+        self.load_modules: Dict = {}
+        self.src_files: Dict = {}
+        self.procedure_names: Dict = {}
+        self.metric_names: Dict = {}
 
         # this list of dicts will hold all the node information such as
         # procedure name, load module, filename, etc. for all the nodes
-        self.node_dicts = []
+        self.node_dicts: List[Dict[str, Union[int, str, Node]]] = []
 
         self.timer = Timer()
 
@@ -428,7 +429,7 @@ class HPCToolkitReader:
         src_file: str,
         line: int,
         module: str,
-    ) -> Dict[str, Union[int, str, Node]]:
+    ) -> Dict[str, Any]:
         """Create a dict with all the node attributes."""
         node_dict = {
             "nid": nid,

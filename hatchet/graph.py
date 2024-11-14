@@ -5,7 +5,7 @@
 
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from .node import Node, traversal_order, node_traversal_order
 
@@ -86,7 +86,7 @@ class Graph:
         if len(self.roots) > 1:
             return False
 
-        visited = {}
+        visited: Dict[int, int] = {}
         list(self.traverse(visited=visited))
         return all(v == 1 for v in visited.values())
 
@@ -101,7 +101,7 @@ class Graph:
             (dict): dictionary from nodes to their merge targets
 
         """
-        merges = {}  # old_node -> merged_node
+        merges: Dict[Node, Node] = {}  # old_node -> merged_node
         inverted_merges = defaultdict(
             lambda: []
         )  # merged_node -> list of corresponding old_nodes
@@ -125,6 +125,7 @@ class Graph:
 
         _find_child_merges(self.roots)
         for node in self.traverse():
+            assert isinstance(node, Node)
             if node in processed:
                 continue
             nodes = None
@@ -189,6 +190,7 @@ class Graph:
 
         # first pass creates new nodes
         for node in self.traverse():
+            assert isinstance(node, Node)
             old_to_new[node] = node.copy()
 
         # second pass hooks up parents and children
@@ -205,7 +207,7 @@ class Graph:
         return graph
 
     def union(
-        self, other: "Graph", old_to_new: Optional[Dict[Node, Node]] = None
+        self, other: "Graph", old_to_new: Optional[Dict[int, Node]] = None
     ) -> "Graph":
         """Create the union of self and other and return it as a new Graph.
 
@@ -365,7 +367,7 @@ class Graph:
                     child._depth = node._depth + 1
                     _iter_depth(child, visited)
 
-        visited = set()
+        visited: Set[Node] = set()
         for root in self.roots:
             root._depth = 0  # depth of root node is 0
             _iter_depth(root, visited)
@@ -375,9 +377,11 @@ class Graph:
             # if "node order" column exists, we traverse sorting by _hatchet_nid
             if self.node_ordering:
                 for i, node in enumerate(self.node_order_traverse()):
+                    assert isinstance(node, Node)
                     node._hatchet_nid = i
             else:
                 for i, node in enumerate(self.traverse()):
+                    assert isinstance(node, Node)
                     node._hatchet_nid = i
 
             self.enumerate_depth()
@@ -386,23 +390,28 @@ class Graph:
         # if "node order" column exists, we traverse sorting by _hatchet_nid
         if self.node_ordering:
             for i, node in enumerate(self.node_order_traverse()):
+                assert isinstance(node, Node)
                 if i != node._hatchet_nid:
                     return False
         else:
             for i, node in enumerate(self.traverse()):
+                assert isinstance(node, Node)
                 if i != node._hatchet_nid:
                     return False
+        return True
 
     def __len__(self) -> int:
         """Size of the graph in terms of number of nodes."""
         return sum(1 for _ in self.traverse())
 
-    def __eq__(self, other: "Graph") -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check if two graphs have the same structure by comparing frame at each
         node.
         """
-        vs = set()
-        vo = set()
+        if not isinstance(other, Graph):
+            return NotImplemented
+        vs: Set[int] = set()
+        vo: Set[int] = set()
 
         # if both graphs are pointing to the same object, then graphs are equal
         if self is other:
@@ -429,7 +438,9 @@ class Graph:
 
         return True
 
-    def __ne__(self, other: "Graph") -> bool:
+    def __ne__(self, other: object) -> bool:
+        if not isinstance(other, Graph):
+            return NotImplemented
         return not (self == other)
 
     @staticmethod

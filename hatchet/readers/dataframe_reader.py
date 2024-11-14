@@ -9,19 +9,8 @@ from hatchet.graph import Graph
 
 import pandas as pd
 
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from typing import Dict, List
-
-# TODO The ABC class was introduced in Python 3.4.
-# When support for earlier versions is (eventually) dropped,
-# this entire "try-except" block can be reduced to:
-# from abc import ABC
-try:
-    from abc import ABC
-except ImportError:
-    from abc import ABCMeta
-
-    ABC = ABCMeta("ABC", (object,), {"__slots__": ()})
 
 
 def _get_node_from_df_iloc(df: pd.DataFrame, ind: int) -> Node:
@@ -38,7 +27,7 @@ def _get_node_from_df_iloc(df: pd.DataFrame, ind: int) -> Node:
 
 
 def _get_parents_and_children(df: pd.DataFrame) -> Dict[Node, Dict[str, List[int]]]:
-    rel_dict = {}
+    rel_dict: Dict[Node, Dict[str, List[int]]] = {}
     for i in range(len(df)):
         node = _get_node_from_df_iloc(df, i)
         if node not in rel_dict:

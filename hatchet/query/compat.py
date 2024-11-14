@@ -3,20 +3,13 @@
 #
 # SPDX-License-Identifier: MIT
 
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 
-try:
-    from abc import ABC
-except ImportError:
-    from abc import ABCMeta
-
-    ABC = ABCMeta("ABC", (object,), {"__slots__": ()})
 import sys
 import warnings
 from collections.abc import Callable
-from typing import List, Optional, Union
+from typing import List, Optional, Union, cast, TYPE_CHECKING
 
-from ..graphframe import GraphFrame
 from ..node import Node
 from .query import Query
 from .compound import (
@@ -25,11 +18,14 @@ from .compound import (
     DisjunctionQuery,
     ExclusiveDisjunctionQuery,
     NegationQuery,
+    parse_string_dialect,
 )
 from .object_dialect import ObjectQuery
-from .string_dialect import parse_string_dialect
 from .engine import QueryEngine
 from .errors import BadNumberNaryQueryArgs, InvalidQueryPath
+
+if TYPE_CHECKING:
+    from ..graphframe import GraphFrame
 
 
 # QueryEngine object for running the legacy "apply" methods
@@ -40,7 +36,7 @@ class AbstractQuery(ABC):
     """Base class for all 'old-style' queries."""
 
     @abstractmethod
-    def apply(self, gf: GraphFrame) -> List[Node]:
+    def apply(self, gf: "GraphFrame") -> List[Node]:
         pass
 
     def __and__(self, other: "AbstractQuery") -> "AndQuery":
@@ -76,7 +72,7 @@ class AbstractQuery(ABC):
         """
         return XorQuery(self, other)
 
-    def __invert__(self) -> "NegationQuery":
+    def __invert__(self) -> "NotQuery":
         """Create a new NotQuery using this query.
 
         Returns:
@@ -99,7 +95,9 @@ class NaryQuery(AbstractQuery):
         Arguments:
             *args (AbstractQuery, str, or list): the subqueries to be performed
         """
-        self.compat_subqueries = []
+        self.compat_subqueries: List[
+            Union[QueryMatcher, CypherQuery, AbstractQuery, Query, CompoundQuery]
+        ] = []
         if isinstance(args[0], tuple) and len(args) == 1:
             args = args[0]
         for query in args:
@@ -119,7 +117,7 @@ class NaryQuery(AbstractQuery):
                      high-level query or a subclass of AbstractQuery"
                 )
 
-    def apply(self, gf: GraphFrame) -> List[Node]:
+    def apply(self, gf: "GraphFrame") -> List[Node]:
         """Applies the query to the specified GraphFrame.
 
         Arguments:
@@ -139,9 +137,10 @@ class NaryQuery(AbstractQuery):
         """
         true_subqueries = []
         for subq in self.compat_subqueries:
-            true_subq = subq
             if issubclass(type(subq), AbstractQuery):
-                true_subq = subq._get_new_query()
+                true_subq = cast(AbstractQuery, subq)._get_new_query()
+            else:
+                true_subq = cast(Union[Query, CompoundQuery], subq)
             true_subqueries.append(true_subq)
         return self._convert_to_new_query(true_subqueries)
 
@@ -291,7 +290,7 @@ class QueryMatcher(AbstractQuery):
             DeprecationWarning,
             stacklevel=2,
         )
-        self.true_query = None
+        self.true_query: Optional[Union[Query, CompoundQuery]] = None
         if query is None:
             self.true_query = Query()
         elif isinstance(query, list):
@@ -314,6 +313,7 @@ class QueryMatcher(AbstractQuery):
         Returns:
             (QueryMatcher): the instance of the class that called this function
         """
+        assert isinstance(self.true_query, Query)
         self.true_query.match(wildcard_spec, filter_func)
         return self
 
@@ -332,10 +332,11 @@ class QueryMatcher(AbstractQuery):
         Returns:
             (QueryMatcher): the instance of the class that called this function
         """
+        assert isinstance(self.true_query, Query)
         self.true_query.rel(wildcard_spec, filter_func)
         return self
 
-    def apply(self, gf: GraphFrame) -> List[Node]:
+    def apply(self, gf: "GraphFrame") -> List[Node]:
         """Apply the query to a GraphFrame.
 
         Arguments:

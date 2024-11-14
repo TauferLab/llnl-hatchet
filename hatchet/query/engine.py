@@ -5,15 +5,14 @@
 
 from itertools import groupby
 import pandas as pd
-from typing import List, Optional, Set, Union
+from typing import Dict, List, Optional, Set, Union, cast
 
 from .errors import InvalidQueryFilter
 from ..node import Node, traversal_order
 from ..graph import Graph
 from .query import Query
-from .compound import CompoundQuery
+from .compound import CompoundQuery, parse_string_dialect
 from .object_dialect import ObjectQuery
-from .string_dialect import parse_string_dialect
 
 
 class QueryEngine:
@@ -21,7 +20,7 @@ class QueryEngine:
 
     def __init__(self) -> None:
         """Creates the QueryEngine."""
-        self.search_cache = {}
+        self.search_cache: Dict[int, List[int]] = {}
 
     def reset_cache(self) -> None:
         """Resets the cache in the QueryEngine."""
@@ -42,24 +41,26 @@ class QueryEngine:
         """
         if issubclass(type(query), Query):
             self.reset_cache()
-            matches = []
-            visited = set()
+            matches: List[List[Node]] = []
+            visited: Set[int] = set()
+            casted_query = cast(Query, query)
             for root in sorted(graph.roots, key=traversal_order):
-                self._apply_impl(query, dframe, root, visited, matches)
+                self._apply_impl(casted_query, dframe, root, visited, matches)
             assert len(visited) == len(graph)
             matched_node_set = list(set().union(*matches))
             # return matches
             return matched_node_set
         elif issubclass(type(query), CompoundQuery):
             results = []
-            for subq in query.subqueries:
+            compound_query = cast(CompoundQuery, query)
+            for subq in compound_query.subqueries:
                 subq_obj = subq
                 if isinstance(subq, list):
                     subq_obj = ObjectQuery(subq)
                 elif isinstance(subq, str):
                     subq_obj = parse_string_dialect(subq)
                 results.append(self.apply(subq_obj, graph, dframe))
-            return query._apply_op_to_results(results, graph)
+            return compound_query._apply_op_to_results(results, graph)
         else:
             raise TypeError("Invalid query data type ({})".format(str(type(query))))
 
@@ -184,15 +185,15 @@ class QueryEngine:
         if query.query_pattern[match_idx][0] == "*":
             pattern_idx = 0
         # Starting matching pattern
-        matches = [[pattern_root]]
+        matches: List[List[Node]] = [[pattern_root]]
         while pattern_idx < len(query):
             # Get the wildcard type
             wcard, _ = query.query_pattern[pattern_idx]
-            new_matches = []
+            new_matches: List[List[Node]] = []
             # Consider each existing match individually so that more
             # nodes can be added to them.
             for m in matches:
-                sub_match = []
+                sub_match: List[Optional[List[Node]]] = []
                 # Get the portion of the subgraph that matches the next
                 # part of the query.
                 if wcard == ".":
@@ -217,9 +218,9 @@ class QueryEngine:
                     )
                 # Merge the next part of the match path with the
                 # existing part.
-                for s in sub_match:
-                    if s is not None:
-                        new_matches.append(m + s)
+                for sm in sub_match:
+                    if sm is not None:
+                        new_matches.append(m + sm)
                 new_matches = [uniq_match for uniq_match, _ in groupby(new_matches)]
             # Overwrite the old matches with the updated matches
             matches = new_matches
@@ -236,7 +237,7 @@ class QueryEngine:
         query: Query,
         dframe: pd.DataFrame,
         node: Node,
-        visited: Set[Node],
+        visited: Set[int],
         matches: List[List[Node]],
     ) -> None:
         """Traverse the subgraph with the specified root, and collect all paths that match the query.
